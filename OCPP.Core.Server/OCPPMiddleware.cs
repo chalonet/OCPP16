@@ -218,7 +218,8 @@ namespace OCPP.Core.Server
                                     _logger.LogTrace("OCPPMiddleware => WebSocket connection with charge point '{0}'", chargepointIdentifier);
                                     chargePointStatus.WebSocket = webSocket;
 
-                                    await Receive16(chargePointStatus, context);
+                                        // OCPP V1.6
+                                        await Receive16(chargePointStatus, context);
                                 }
                             }
                         }
@@ -301,7 +302,9 @@ namespace OCPP.Core.Server
                                 ChargePointStatus status = null;
                                 if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
                                 {
-                                    await Reset16(status, context);
+                                    
+                                        // OCPP V1.6
+                                        await Reset16(status, context);
                                 }
                                 else
                                 {
@@ -331,7 +334,8 @@ namespace OCPP.Core.Server
                                 ChargePointStatus status = null;
                                 if (_chargePointStatusDict.TryGetValue(urlChargePointId, out status))
                                 {
-                                    await UnlockConnector16(status, context);
+                                        // OCPP V1.6
+                                        await UnlockConnector16(status, context);
                                 }
                                 else
                                 {

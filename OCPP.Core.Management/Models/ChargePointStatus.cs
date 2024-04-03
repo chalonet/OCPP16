@@ -1,5 +1,4 @@
 ﻿
-
 using OCPP.Core.Database;
 using System;
 using System.Collections.Generic;

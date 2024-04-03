@@ -10,6 +10,7 @@
     <div class="tilegrid">
         @foreach (ChargePointsOverviewViewModel cpvm in Model.ChargePoints)
         {
+
             string chargePointName = string.IsNullOrWhiteSpace(cpvm.Name) ? $"{cpvm.ChargePointId}:{cpvm.ConnectorId}" : cpvm.Name;
             string lastCharge = (cpvm.MeterStart >= 0 && cpvm.MeterStop != null) ? string.Format(Localizer["ChargekWh"].Value, (cpvm.MeterStop - cpvm.MeterStart)) : null;
             string chargeTime = null;
@@ -41,12 +42,12 @@
                     break;
             }
 
-            <div class="card  mb-3 shadow" style="max-width: 18rem;">
+            <div class="card border-secondary" style="max-width: 18rem;">
                 <a href="~/Home/Transactions/@Uri.EscapeDataString(cpvm.ChargePointId)/@cpvm.ConnectorId" class="text-decoration-none">
-                    <div class="card-header bg-@cpColor text-dark">
+                    <div class="card-header @cpColor">
                         <i class="fas @cpIcon fa-2x"></i> @chargePointName
                     </div>
-                    <div class="card-body">
+                    <div class="card-body text-secondary">
                         <h5 class="card-title">@cpTitle</h5>
                         @if (!string.IsNullOrEmpty(chargeTime))
                         {
@@ -87,3 +88,4 @@
         </div>
     }
 }
+
