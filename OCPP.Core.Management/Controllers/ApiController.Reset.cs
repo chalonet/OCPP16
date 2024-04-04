@@ -32,7 +32,7 @@ namespace OCPP.Core.Management.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public async Task<IActionResult> Reset(string Id)
         {
-            if (User != null && !User.IsInRole(Constants.AdminRoleName))
+            if (User != null && !User.IsInRole(Constants.AdminRoleName) && !User.IsInRole(Constants.SuperAdminRoleName))
             {
                 Logger.LogWarning("Reset: Request by non-administrator: {0}", User?.Identity?.Name);
                 return StatusCode((int)HttpStatusCode.Unauthorized);

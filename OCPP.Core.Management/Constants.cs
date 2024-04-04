@@ -11,6 +11,8 @@ namespace OCPP.Core.Management
     {
         public static string AdminRoleName = "Administrator";
 
+        public static string SuperAdminRoleName = "SuperAdmin";
+
         public static string HomeController = "Home";
     }
 }

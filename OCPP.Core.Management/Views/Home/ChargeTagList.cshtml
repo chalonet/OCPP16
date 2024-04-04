@@ -9,13 +9,15 @@
 @if (Model != null)
 {
     <table id="dtChargeTags" class="table table-striped table-bordered table-sm table-hover" cellspacing="0" width="100%">
-        <thead>
+        <thead class="thead-dark">
             <tr>
-                <th class="th-sm">@Localizer["TagId"]</th>
-                <th class="th-sm">@Localizer["TagName"]</th>
-                <th class="th-sm">@Localizer["GroupName"]</th>
-                <th class="th-sm">@Localizer["ExpiryDate"]</th>
-                <th class="th-sm">@Localizer["Blocked"]</th>
+                <th scope="col">@Localizer["TagId"]</th>
+                <th scope="col">@Localizer["TagName"]</th>
+                <th scope="col">@Localizer["GroupName"]</th>
+                <th scope="col">@Localizer["ExpiryDate"]</th>
+                <th scope="col">@Localizer["Blocked"]</th>
+                <th scope="col">@Localizer["ChargingTime (min)"]</th> 
+                <th scope="col">@Localizer["Actions"]</th>
             </tr>
         </thead>
         <tbody>
@@ -29,6 +31,16 @@
                         <td>@tag.ParentTagId</td>
                         <td>@((tag.ExpiryDate != null) ? tag.ExpiryDate.Value.ToString(ViewBag.DatePattern) : "-")</td>
                         <td>@((tag.Blocked == true) ? "1" : "0")</td>
+                        <td>@(tag.ChargingTime != null ? tag.ChargingTime.Value: 0)</td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group" aria-label="Actions">
+                                <form method="post" action="@Url.Action("DeleteTag", "Home", new { id = tag.TagId })" onsubmit="return confirm('@Localizer["ConfirmDelete"]');">
+                                    <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> @Localizer["Delete"]</button>
+                                </form>
+                                &nbsp; 
+                                <a href="@Url.Action("EditTag", "Home", new { id = tag.TagId })" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> @Localizer["Edit"]</a>
+                            </div>
+                        </td>
                     </tr>
                 }
             }
@@ -36,6 +48,7 @@
     </table>
 
     <br />
-    <a class="btn btn-secondary" href="~/Home/ChargeTag/@@">@Localizer["AddNew"]</a>
+    <a class="btn btn-success btn-sm" href="@Url.Action("ChargeTag", "Home", new { Id = "@" })">
+        <i class="fas fa-plus"></i> @Localizer["AddNew"]
+    </a>
 }
-

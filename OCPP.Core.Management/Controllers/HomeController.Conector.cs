@@ -23,7 +23,7 @@ namespace OCPP.Core.Management.Controllers
         {
             try
             {
-                if (User != null && !User.IsInRole(Constants.AdminRoleName))
+                if (User != null && !User.IsInRole(Constants.AdminRoleName)&& !User.IsInRole(Constants.SuperAdminRoleName))
                 {
                     Logger.LogWarning("Connector: Request by non-administrator: {0}", User?.Identity?.Name);
                     TempData["ErrMsgKey"] = "AccessDenied";
@@ -83,8 +83,9 @@ namespace OCPP.Core.Management.Controllers
                             csvm.LastMeterTime = currentConnectorStatus.LastMeterTime;
                         }
 
-                        string viewName = (currentConnectorStatus != null) ? "ConnectorDetail" : "ConnectorList";
+                        string viewName = "ConnectorList";
                         return View(viewName, csvm);
+
                     }
                 }
             }

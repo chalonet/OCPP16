@@ -19,7 +19,7 @@ namespace OCPP.Core.Management.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public async Task<IActionResult> UnlockConnector(string Id)
         {
-            if (User != null && !User.IsInRole(Constants.AdminRoleName))
+            if (User != null && !User.IsInRole(Constants.AdminRoleName) && !User.IsInRole(Constants.AdminRoleName))
             {
                 Logger.LogWarning("UnlockConnector: Request by non-administrator: {0}", User?.Identity?.Name);
                 return StatusCode((int)HttpStatusCode.Unauthorized);

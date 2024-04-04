@@ -28,5 +28,7 @@ namespace OCPP.Core.Management.Models
         [StringLength(100)]
         public string ConnectorName { get; set; }
 
+        public int TimeConnect { get; set; }
+
     }
 }

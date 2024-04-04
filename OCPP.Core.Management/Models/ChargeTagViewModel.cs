@@ -1,6 +1,4 @@
-﻿
-
-using OCPP.Core.Database;
+﻿using OCPP.Core.Database;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -15,7 +13,6 @@ namespace OCPP.Core.Management.Models
 
         public string CurrentTagId { get; set; }
 
-
         [Required, StringLength(50)]
         public string TagId { get; set; }
 
@@ -29,5 +26,8 @@ namespace OCPP.Core.Management.Models
         public DateTime? ExpiryDate { get; set; }
 
         public bool Blocked { get; set; }
+
+        public int? ChargingTime { get; set; }
+
     }
 }

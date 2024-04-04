@@ -35,7 +35,7 @@ namespace OCPP.Core.Management
                     if (cfgUser.GetValue<string>("Username") == user.Username &&
                         cfgUser.GetValue<string>("Password") == user.Password)
                     {
-                        user.IsAdmin = cfgUser.GetValue<bool>(Constants.AdminRoleName);
+                        user.Role = cfgUser.GetValue<string>("Role");
                         ClaimsIdentity identity = new ClaimsIdentity(this.GetUserClaims(user), CookieAuthenticationDefaults.AuthenticationScheme);
                         ClaimsPrincipal principal = new ClaimsPrincipal(identity);
 
@@ -70,10 +70,14 @@ namespace OCPP.Core.Management
             List<Claim> claims = new List<Claim>();
 
             claims.Add(new Claim(ClaimTypes.NameIdentifier, user.Username));
-            if (user.IsAdmin)
+            if (user.Role == Constants.AdminRoleName )
             {
                 claims.Add(new Claim(ClaimTypes.Role, Constants.AdminRoleName));
-            }
+            }   
+            if (user.Role == Constants.SuperAdminRoleName)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, Constants.SuperAdminRoleName));
+            }  
             return claims;
         }
     }

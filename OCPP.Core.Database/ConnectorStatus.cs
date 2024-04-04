@@ -18,5 +18,7 @@ namespace OCPP.Core.Database
 
         public double? LastMeter { get; set; }
         public DateTime? LastMeterTime { get; set; }
+
+        
     }
 }

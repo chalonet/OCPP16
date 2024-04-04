@@ -21,6 +21,7 @@ namespace OCPP.Core.Database
         public DateTime? StopTime { get; set; }
         public double? MeterStop { get; set; }
         public string StopReason { get; set; }
+        public int? TimeConnect { get; set; }
 
         public virtual ChargePoint ChargePoint { get; set; }
     }

@@ -1,6 +1,6 @@
 USE [OCPP.Core]
 GO
-/****** Object:  Table [dbo].[ChargePoint]    Script Date: 20.12.2020 22:54:30 ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -18,7 +18,7 @@ CREATE TABLE [dbo].[ChargePoint](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[ChargeTags]    Script Date: 20.12.2020 22:54:30 ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -29,13 +29,14 @@ CREATE TABLE [dbo].[ChargeTags](
 	[ParentTagId] [nvarchar](50) NULL,
 	[ExpiryDate] [datetime2](7) NULL,
 	[Blocked] [bit] NULL,
+	[ChargingTime] [int] NULL,
  CONSTRAINT [PK_ChargeKeys] PRIMARY KEY CLUSTERED 
 (
 	[TagId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[MessageLog]    Script Date: 20.12.2020 22:54:30 ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -54,7 +55,7 @@ CREATE TABLE [dbo].[MessageLog](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Transactions]    Script Date: 20.12.2020 22:54:30 ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -72,6 +73,7 @@ CREATE TABLE [dbo].[Transactions](
 	[StopTime] [datetime2](7) NULL,
 	[MeterStop] [float] NULL,
 	[StopReason] [nvarchar](100) NULL,
+	[TimeConnect] [int] NOT NULL,
  CONSTRAINT [PK_Transactions] PRIMARY KEY CLUSTERED 
 (
 	[TransactionId] ASC
@@ -79,7 +81,6 @@ CREATE TABLE [dbo].[Transactions](
 ) ON [PRIMARY]
 GO
 
-/**** New with V1.1.0 ****/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -107,7 +108,7 @@ GO
 CREATE VIEW [dbo].[ConnectorStatusView]
 AS
 SELECT cs.ChargePointId, cs.ConnectorId, cs.ConnectorName, cs.LastStatus, cs.LastStatusTime, cs.LastMeter, cs.LastMeterTime, t.TransactionId, t.StartTagId, t.StartTime, t.MeterStart, t.StartResult, t.StopTagId, t.StopTime, t.MeterStop, 
-                  t.StopReason
+                  t.StopReason, t.TimeConnect 
 FROM     dbo.ConnectorStatus AS cs LEFT OUTER JOIN
                   dbo.Transactions AS t ON t.ChargePointId = cs.ChargePointId AND t.ConnectorId = cs.ConnectorId
 WHERE  (t.TransactionId IS NULL) OR
@@ -116,18 +117,18 @@ WHERE  (t.TransactionId IS NULL) OR
                        FROM      dbo.Transactions
                        GROUP BY ChargePointId, ConnectorId))
 GO
-/**** End ****/
+
 
 
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [ChargePoint_Identifier]    Script Date: 20.12.2020 22:54:30 ******/
+
 CREATE UNIQUE NONCLUSTERED INDEX [ChargePoint_Identifier] ON [dbo].[ChargePoint]
 (
 	[ChargePointId] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_MessageLog_ChargePointId]    Script Date: 20.12.2020 22:54:30 ******/
+
 CREATE NONCLUSTERED INDEX [IX_MessageLog_ChargePointId] ON [dbo].[MessageLog]
 (
 	[LogTime] ASC
@@ -146,4 +147,9 @@ GO
 USE [master]
 GO
 ALTER DATABASE [OCPP.Core] SET  READ_WRITE 
+GO
+
+-- Agregar columna para el tiempo de carga
+ALTER TABLE [dbo].[ChargeTags]
+ADD [ChargingTime] [int] NULL;
 GO

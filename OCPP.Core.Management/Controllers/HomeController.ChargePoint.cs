@@ -19,7 +19,7 @@ namespace OCPP.Core.Management.Controllers
         {
             try
             {
-                if (User != null && !User.IsInRole(Constants.AdminRoleName))
+                if (User != null && !User.IsInRole(Constants.AdminRoleName)&& !User.IsInRole(Constants.SuperAdminRoleName))
                 {
                     Logger.LogWarning("ChargePoint: Request by non-administrator: {0}", User?.Identity?.Name);
                     TempData["ErrMsgKey"] = "AccessDenied";
@@ -50,57 +50,12 @@ namespace OCPP.Core.Management.Controllers
 
                     if (Request.Method == "POST")
                     {
-                        string errorMsg = null;
-
                         if (Id == "@")
                         {
-                            Logger.LogTrace("ChargePoint: Creating new charge point...");
-
-                            // Create new tag
-                            if (string.IsNullOrWhiteSpace(cpvm.ChargePointId))
-                            {
-                                errorMsg = _localizer["ChargePointIdRequired"].Value;
-                                Logger.LogInformation("ChargePoint: New => no charge point ID entered");
-                            }
-
-                            if (string.IsNullOrEmpty(errorMsg))
-                            {
-                                // check if duplicate
-                                foreach (ChargePoint cp in dbChargePoints)
-                                {
-                                    if (cp.ChargePointId.Equals(cpvm.ChargePointId, StringComparison.InvariantCultureIgnoreCase))
-                                    {
-                                        // id already exists
-                                        errorMsg = _localizer["ChargePointIdExists"].Value;
-                                        Logger.LogInformation("ChargePoint: New => charge point ID already exists: {0}", cpvm.ChargePointId);
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (string.IsNullOrEmpty(errorMsg))
-                            {
-                                // Save tag in DB
-                                ChargePoint newChargePoint = new ChargePoint();
-                                newChargePoint.ChargePointId = cpvm.ChargePointId;
-                                newChargePoint.Name = cpvm.Name;
-                                newChargePoint.Comment = cpvm.Comment;
-                                newChargePoint.Username = cpvm.Username;
-                                newChargePoint.Password = cpvm.Password;
-                                newChargePoint.ClientCertThumb = cpvm.ClientCertThumb;
-                                dbContext.ChargePoints.Add(newChargePoint);
-                                dbContext.SaveChanges();
-                                Logger.LogInformation("ChargePoint: New => charge point saved: {0} / {1}", cpvm.ChargePointId, cpvm.Name);
-                            }
-                            else
-                            {
-                                ViewBag.ErrorMsg = errorMsg;
-                                return View("ChargePointDetail", cpvm);
-                            }
+                            return CreateChargePoint(cpvm, dbChargePoints);
                         }
                         else if (currentChargePoint.ChargePointId == Id)
                         {
-                            // Save existing charge point
                             Logger.LogTrace("ChargePoint: Saving charge point '{0}'", Id);
                             currentChargePoint.Name = cpvm.Name;
                             currentChargePoint.Comment = cpvm.Comment;
@@ -116,12 +71,11 @@ namespace OCPP.Core.Management.Controllers
                     }
                     else
                     {
-                        // Display charge point
                         cpvm = new ChargePointViewModel();
                         cpvm.ChargePoints = dbChargePoints;
                         cpvm.CurrentId = Id;
 
-                        if (currentChargePoint!= null)
+                        if (currentChargePoint != null)
                         {
                             cpvm = new ChargePointViewModel();
                             cpvm.ChargePointId = currentChargePoint.ChargePointId;
@@ -144,5 +98,220 @@ namespace OCPP.Core.Management.Controllers
                 return RedirectToAction("Error", new { Id = "" });
             }
         }
+
+
+        [Authorize]
+        private IActionResult CreateChargePoint(ChargePointViewModel cpvm, List<ChargePoint> dbChargePoints)
+        {
+            try
+            {
+                string errorMsg = null;
+
+                Logger.LogTrace("ChargePoint: Creating new charge point...");
+
+                // Validaciones para la creación del charge point
+                if (string.IsNullOrWhiteSpace(cpvm.ChargePointId))
+                {
+                    errorMsg = _localizer["ChargePointIdRequired"].Value;
+                    Logger.LogInformation("ChargePoint: New => no charge point ID entered");
+                }
+
+                if (string.IsNullOrEmpty(errorMsg))
+                {
+                    // Comprobar si ya existe un charge point con el mismo ID
+                    foreach (ChargePoint cp in dbChargePoints)
+                    {
+                        if (cp.ChargePointId.Equals(cpvm.ChargePointId, StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            // El ID ya existe
+                            errorMsg = _localizer["ChargePointIdExists"].Value;
+                            Logger.LogInformation("ChargePoint: New => charge point ID already exists: {0}", cpvm.ChargePointId);
+                            break;
+                        }
+                    }
+                }
+
+                if (string.IsNullOrEmpty(errorMsg))
+                {
+                    // Guardar el nuevo charge point en la base de datos
+                    using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                    {
+                        ChargePoint newChargePoint = new ChargePoint();
+                        newChargePoint.ChargePointId = cpvm.ChargePointId;
+                        newChargePoint.Name = cpvm.Name;
+                        newChargePoint.Comment = cpvm.Comment;
+                        newChargePoint.Username = cpvm.Username;
+                        newChargePoint.Password = cpvm.Password;
+                        newChargePoint.ClientCertThumb = cpvm.ClientCertThumb;
+                        dbContext.ChargePoints.Add(newChargePoint);
+                        dbContext.SaveChanges();
+                        Logger.LogInformation("ChargePoint: New => charge point saved: {0} / {1}", cpvm.ChargePointId, cpvm.Name);
+                    }
+
+                    return RedirectToAction("ChargePoint", new { Id = "" });
+                }
+                else
+                {
+                    ViewBag.ErrorMsg = errorMsg;
+                    return View("ChargePointDetail", cpvm);
+                }
+            }
+            catch (Exception exp)
+            {
+                Logger.LogError(exp, "CreateChargePoint: Error creating charge point");
+                TempData["ErrMessage"] = exp.Message;
+                return RedirectToAction("Error", new { Id = "" });
+            }
+        }
+
+        
+        [Authorize]
+        public IActionResult DeleteChargePoint(string id)
+        {
+            try
+            {
+                if (User != null && !User.IsInRole(Constants.AdminRoleName) && !User.IsInRole(Constants.SuperAdminRoleName))
+                {
+                    Logger.LogWarning("DeleteChargePoint: Request by non-administrator: {0}", User?.Identity?.Name);
+                    TempData["ErrMsgKey"] = "AccessDenied";
+                    return RedirectToAction("Error", new { Id = "" });
+                }
+
+                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                {
+                    var chargePointToDelete = dbContext.ChargePoints
+                        .AsEnumerable()
+                        .FirstOrDefault(cp => cp.ChargePointId.Equals(id, StringComparison.InvariantCultureIgnoreCase));
+
+                    if (chargePointToDelete == null)
+                    {
+                        TempData["ErrMsgKey"] = "ChargePointNotFound";
+                        return RedirectToAction("Error", new { Id = "" });
+                    }
+
+                    dbContext.ChargePoints.Remove(chargePointToDelete);
+                    dbContext.SaveChanges();
+                    Logger.LogInformation("DeleteChargePoint: Charge point deleted: {0} / {1}", chargePointToDelete.ChargePointId, chargePointToDelete.Name);
+
+                    return RedirectToAction("ChargePoint", new { Id = "" });
+                }
+            }
+            catch (Exception exp)
+            {
+                Logger.LogError(exp, "DeleteChargePoint: Error deleting charge point");
+                TempData["ErrMessage"] = exp.Message;
+                return RedirectToAction("Error", new { Id = "" });
+            }
+        }
+
+        [Authorize]
+        public IActionResult EditChargePoint(string id, ChargePointViewModel cpvm)
+        {
+            try
+            {
+                if (User != null && !User.IsInRole(Constants.AdminRoleName) && !User.IsInRole(Constants.SuperAdminRoleName))
+                {
+                    Logger.LogWarning("EditChargePoint: Request by non-administrator: {0}", User?.Identity?.Name);
+                    TempData["ErrMsgKey"] = "AccessDenied";
+                    return RedirectToAction("Error", new { Id = "" });
+                }
+
+                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                {
+                    var chargePointToEdit = dbContext.ChargePoints
+                        .FirstOrDefault(cp => cp.ChargePointId.ToUpper() == id.ToUpper());
+
+                    if (chargePointToEdit == null)
+                    {
+                        TempData["ErrMsgKey"] = "ChargePointNotFound";
+                        return RedirectToAction("Error", new { Id = "" });
+                    }
+
+                    if (Request.Method == "POST")
+                    {
+                        // Validación de datos
+                        string errorMsg = ValidateChargePointData(cpvm);
+                        if (!string.IsNullOrEmpty(errorMsg))
+                        {
+                            ViewBag.ErrorMsg = errorMsg;
+                            return View("ChargePointDetail", cpvm);
+                        }
+
+                        // Actualización de datos del ChargePoint
+                        chargePointToEdit.Name = cpvm.Name;
+                        chargePointToEdit.Comment = cpvm.Comment;
+                        chargePointToEdit.Username = cpvm.Username;
+                        chargePointToEdit.Password = cpvm.Password;
+                        chargePointToEdit.ClientCertThumb = cpvm.ClientCertThumb;
+
+                        dbContext.SaveChanges();
+                        Logger.LogInformation("EditChargePoint: Charge point edited: {0} / {1}", chargePointToEdit.ChargePointId, chargePointToEdit.Name);
+
+                        return RedirectToAction("ChargePoint", new { Id = "" });
+                    }
+                    else
+                    {
+                        // Cargar datos del ChargePoint para mostrar en la vista
+                        cpvm = new ChargePointViewModel();
+                        cpvm.ChargePointId = chargePointToEdit.ChargePointId;
+                        cpvm.Name = chargePointToEdit.Name;
+                        cpvm.Comment = chargePointToEdit.Comment;
+                        cpvm.Username = chargePointToEdit.Username;
+                        cpvm.Password = chargePointToEdit.Password;
+                        cpvm.ClientCertThumb = chargePointToEdit.ClientCertThumb;
+
+                        return View("ChargePointDetail", cpvm);
+                    }
+                }
+            }
+            catch (Exception exp)
+            {
+                Logger.LogError(exp, "EditChargePoint: Error editing charge point");
+                TempData["ErrMessage"] = exp.Message;
+                return RedirectToAction("Error", new { Id = "" });
+            }
+        }
+
+        private string ValidateChargePointData(ChargePointViewModel cpvm)
+        {
+            if (string.IsNullOrWhiteSpace(cpvm.ChargePointId))
+            {
+                return _localizer["ChargePointIdRequired"].Value;
+            }
+
+            if (cpvm.ChargePointId.Length > 100)
+            {
+                return _localizer["ChargePointIdTooLong"].Value;
+            }
+
+            if (string.IsNullOrWhiteSpace(cpvm.Name))
+            {
+                return _localizer["NameRequired"].Value;
+            }
+
+            if (cpvm.Name.Length > 100)
+            {
+                return _localizer["NameTooLong"].Value;
+            }
+
+            if (!string.IsNullOrWhiteSpace(cpvm.Username) && cpvm.Username.Length > 50)
+            {
+                return _localizer["UsernameTooLong"].Value;
+            }
+
+            if (!string.IsNullOrWhiteSpace(cpvm.Password) && cpvm.Password.Length > 50)
+            {
+                return _localizer["PasswordTooLong"].Value;
+            }
+
+            if (!string.IsNullOrWhiteSpace(cpvm.ClientCertThumb) && cpvm.ClientCertThumb.Length > 100)
+            {
+                return _localizer["ClientCertThumbTooLong"].Value;
+            }
+
+            return null;
+        }
+
+
     }
 }

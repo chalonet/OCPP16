@@ -16,6 +16,8 @@ namespace OCPP.Core.Management.Models
 
         public Dictionary<string, ChargeTag> ChargeTags { get; set; }
 
+        public Transaction PreviousTransaction { get; set; }
+
         public string CurrentChargePointId { get; set; }
 
         public int CurrentConnectorId { get; set; }
