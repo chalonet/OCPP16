@@ -13,23 +13,12 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace OCPP.Core.Management.Controllers
 {
     public partial class HomeController : BaseController
     {
-        private readonly IStringLocalizer<HomeController> _localizer;
-
-        public HomeController(
-            UserManager userManager,
-            IStringLocalizer<HomeController> localizer,
-            ILoggerFactory loggerFactory,
-            IConfiguration config) : base(userManager, loggerFactory, config)
-        {
-            _localizer = localizer;
-            Logger = loggerFactory.CreateLogger<HomeController>();
-        }
-
         [Authorize]
         public async Task<IActionResult> Index()
         {
@@ -118,7 +107,12 @@ namespace OCPP.Core.Management.Controllers
                 }
                 #endregion
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
                     // List of charge point status (OCPP messages) with latest transaction (if one exist)
                     List<ConnectorStatusView> connectorStatusViewList = dbContext.ConnectorStatusViews.ToList<ConnectorStatusView>();

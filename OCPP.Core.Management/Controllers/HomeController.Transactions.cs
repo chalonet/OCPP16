@@ -9,6 +9,8 @@ using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
+using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
 
 namespace OCPP.Core.Management.Controllers
 {
@@ -53,7 +55,12 @@ namespace OCPP.Core.Management.Controllers
                     tlvm.Timespan = 1;
                 }
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
                     Logger.LogTrace("Transactions: Loading charge points...");
                     tlvm.ChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
@@ -141,7 +148,6 @@ namespace OCPP.Core.Management.Controllers
                                     .FirstOrDefault();
                                 if (lastTransaction.StopTime != null)
                                 {
-
                                     if (lastTransaction != null)
                                     {
                                         // Obtener el tag asociado con la última transacción

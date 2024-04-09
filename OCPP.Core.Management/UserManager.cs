@@ -1,84 +1,59 @@
-﻿
-
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-
 using OCPP.Core.Management.Models;
+using OCPP.Core.Database;
 
 namespace OCPP.Core.Management
 {
     public class UserManager
     {
-        private IConfiguration Configuration;
+        private readonly OCPPCoreContext _dbContext;
 
-        public UserManager(IConfiguration configuration)
+        public UserManager(IConfiguration configuration, OCPPCoreContext dbContext)
         {
-            Configuration = configuration;
+            _dbContext = dbContext;
         }
 
-        public async Task SignIn(HttpContext httpContext, UserModel user, bool isPersistent = false)
+        public async Task SignIn(HttpContext httpContext, UserViewModel user, bool isPersistent = false)
         {
-            try
+            var usuario = await _dbContext.Usuarios.FirstOrDefaultAsync(u => u.Username == user.Username && u.Password == user.Password);
+            if (usuario != null)
             {
-                IEnumerable cfgUsers = Configuration.GetSection("Users").GetChildren();
-
-                foreach (ConfigurationSection cfgUser in cfgUsers)
+                var claims = new List<Claim>
                 {
-                    if (cfgUser.GetValue<string>("Username") == user.Username &&
-                        cfgUser.GetValue<string>("Password") == user.Password)
-                    {
-                        user.Role = cfgUser.GetValue<string>("Role");
-                        ClaimsIdentity identity = new ClaimsIdentity(this.GetUserClaims(user), CookieAuthenticationDefaults.AuthenticationScheme);
-                        ClaimsPrincipal principal = new ClaimsPrincipal(identity);
-
-                        await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-                        break;
-                    }
-                }
-
-            }
-            catch //(Exception exp)
-            {
+                    new Claim(ClaimTypes.NameIdentifier, usuario.Username),
+                    new Claim(ClaimTypes.Name, usuario.Username),
+                    new Claim(ClaimTypes.Role, usuario.Role) 
+                };
+                
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = isPersistent
+                };
+                
+                await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
+                
+                user.Username = null;
+                user.Password = null;
             }
         }
+
 
         public async Task SignOut(HttpContext httpContext)
         {
             await httpContext.SignOutAsync();
         }
 
-        private IEnumerable<Claim> GetUserClaims(UserModel user)
+        public async Task<Usuario> GetUser(string username)
         {
-            List<Claim> claims = new List<Claim>();
-
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, user.Username));
-            claims.Add(new Claim(ClaimTypes.Name , user.Username));
-            claims.AddRange(this.GetUserRoleClaims(user));
-            return claims;
-        }
-
-        private IEnumerable<Claim> GetUserRoleClaims(UserModel user)
-        {
-            List<Claim> claims = new List<Claim>();
-
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, user.Username));
-            if (user.Role == Constants.AdminRoleName )
-            {
-                claims.Add(new Claim(ClaimTypes.Role, Constants.AdminRoleName));
-            }   
-            if (user.Role == Constants.SuperAdminRoleName)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, Constants.SuperAdminRoleName));
-            }  
-            return claims;
+            return await _dbContext.Usuarios.FirstOrDefaultAsync(u => u.Username == username);
         }
     }
 }

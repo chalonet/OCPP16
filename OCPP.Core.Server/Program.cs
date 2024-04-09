@@ -9,13 +9,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
-
+using Microsoft.EntityFrameworkCore;
 namespace OCPP.Core.Server
 {
     public class Program
     {
+        
         public static void Main(string[] args)
         {
+            
             IConfiguration config = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: false)
                 .Build();
@@ -23,7 +25,12 @@ namespace OCPP.Core.Server
             try
             {
                 // Force the EF model creation for faster startup
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(config))
+                // Construir DbContextOptions usando IConfiguration
+                var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                optionsBuilder.UseSqlServer(config.GetConnectionString("SqlServer"));
+
+                // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
                     IModel model = dbContext.Model;
                 }

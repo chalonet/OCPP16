@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
+using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
 
 namespace OCPP.Core.Management.Controllers
 {
@@ -33,7 +35,12 @@ namespace OCPP.Core.Management.Controllers
                 ViewBag.Language = CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
                 ctvm.CurrentTagId = Id;
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
                     Logger.LogTrace("ChargeTag: Loading charge tags...");
                     List<ChargeTag> dbChargeTags = dbContext.ChargeTags.ToList<ChargeTag>();
@@ -173,7 +180,12 @@ namespace OCPP.Core.Management.Controllers
                 ViewBag.Language = CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
                 ctvm.CurrentTagId = id;
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
                     ChargeTag currentChargeTag = null;
                     if (!string.IsNullOrEmpty(id))
@@ -240,7 +252,12 @@ namespace OCPP.Core.Management.Controllers
                 return RedirectToAction("Error", new { Id = "" });
             }
 
-            using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+            // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
             {
                 // Obtener todas las etiquetas de carga y filtrar en memoria
                 List<ChargeTag> allChargeTags = dbContext.ChargeTags.ToList();

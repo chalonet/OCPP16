@@ -9,11 +9,27 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
+using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace OCPP.Core.Management.Controllers
 {
     public partial class HomeController : BaseController
     {
+        private readonly IConfiguration _configuration;
+        private readonly IStringLocalizer<HomeController> _localizer;
+
+        public HomeController(
+            UserManager userManager,
+            IStringLocalizer<HomeController> localizer,
+            ILoggerFactory loggerFactory,
+            IConfiguration configuration) : base(userManager, loggerFactory, configuration)
+        {
+            _localizer = localizer;
+            _configuration = configuration;
+            Logger = loggerFactory.CreateLogger<HomeController>();
+        }
         [Authorize]
         public IActionResult ChargePoint(string Id, ChargePointViewModel cpvm)
         {
@@ -28,7 +44,12 @@ namespace OCPP.Core.Management.Controllers
 
                 cpvm.CurrentId = Id;
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                 // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
                     Logger.LogTrace("ChargePoint: Loading charge points...");
                     List<ChargePoint> dbChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
@@ -101,7 +122,7 @@ namespace OCPP.Core.Management.Controllers
 
 
         [Authorize]
-        private IActionResult CreateChargePoint(ChargePointViewModel cpvm, List<ChargePoint> dbChargePoints)
+        public IActionResult CreateChargePoint(ChargePointViewModel cpvm, List<ChargePoint> dbChargePoints)
         {
             try
             {
@@ -133,8 +154,12 @@ namespace OCPP.Core.Management.Controllers
 
                 if (string.IsNullOrEmpty(errorMsg))
                 {
-                    // Guardar el nuevo charge point en la base de datos
-                    using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                    // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                     {
                         ChargePoint newChargePoint = new ChargePoint();
                         newChargePoint.ChargePointId = cpvm.ChargePointId;
@@ -177,7 +202,12 @@ namespace OCPP.Core.Management.Controllers
                     return RedirectToAction("Error", new { Id = "" });
                 }
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
                     var chargePointToDelete = dbContext.ChargePoints
                         .AsEnumerable()
@@ -216,7 +246,12 @@ namespace OCPP.Core.Management.Controllers
                     return RedirectToAction("Error", new { Id = "" });
                 }
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
                     var chargePointToEdit = dbContext.ChargePoints
                         .FirstOrDefault(cp => cp.ChargePointId.ToUpper() == id.ToUpper());
@@ -272,7 +307,7 @@ namespace OCPP.Core.Management.Controllers
             }
         }
 
-        private string ValidateChargePointData(ChargePointViewModel cpvm)
+        public string ValidateChargePointData(ChargePointViewModel cpvm)
         {
             if (string.IsNullOrWhiteSpace(cpvm.ChargePointId))
             {

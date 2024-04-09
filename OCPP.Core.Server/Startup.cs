@@ -23,6 +23,7 @@ namespace OCPP.Core.Server
 {
     public class Startup
     {
+
         /// <summary>
         /// ILogger object
         /// </summary>

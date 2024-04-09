@@ -1,21 +1,12 @@
-
-
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
+using Microsoft.EntityFrameworkCore;
 
 namespace OCPP.Core.Management
 {
@@ -31,16 +22,21 @@ namespace OCPP.Core.Management
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDbContext<OCPPCoreContext>(options =>
+            {
+                options.UseSqlServer(Configuration.GetConnectionString("SqlServer")); // Ajusta esto según tu configuración
+            });
+
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(options =>
+                {
+                    options.LoginPath = "/Account/Login";
+                    options.LogoutPath = "/Account/Logout";
+                });
+    
             services.AddControllersWithViews();
 
-            services.AddAuthentication(
-                CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme,
-                    options =>
-                    {
-                        options.LoginPath = "/Account/Login";
-                        options.LogoutPath = "/Account/Logout";
-                    });
+           
 
             services.AddLocalization(opts => { opts.ResourcesPath = "Resources"; });
             services.AddMvc()
@@ -49,20 +45,14 @@ namespace OCPP.Core.Management
                     opts => { opts.ResourcesPath = "Resources"; })
                 .AddDataAnnotationsLocalization();
 
-            // authentication 
-            services.AddAuthentication(options =>
-            {
-                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-            });
+            // Add UserManager with dependency injection
+            services.AddScoped<UserManager>();
 
-            services.AddTransient(
-                m => new UserManager(Configuration)
-                );
             services.AddDistributedMemoryCache();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, OCPPCoreContext dbContext)
         {
             if (env.IsDevelopment())
             {
@@ -72,6 +62,8 @@ namespace OCPP.Core.Management
             {
                 app.UseExceptionHandler("/Home/Error");
             }
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.UseStaticFiles();
 

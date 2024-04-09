@@ -12,6 +12,7 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace OCPP.Core.Server
 {
@@ -72,7 +73,12 @@ namespace OCPP.Core.Server
                 // Known chargepoint?
                 if (!string.IsNullOrWhiteSpace(chargepointIdentifier))
                 {
-                    using (OCPPCoreContext dbContext = new OCPPCoreContext(_configuration))
+                    // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                     {
                         ChargePoint chargePoint = dbContext.Find<ChargePoint>(chargepointIdentifier);
                         if (chargePoint != null)

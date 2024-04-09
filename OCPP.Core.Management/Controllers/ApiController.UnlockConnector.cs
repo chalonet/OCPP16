@@ -1,20 +1,30 @@
-﻿
-
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
+using Microsoft.EntityFrameworkCore;
 
 namespace OCPP.Core.Management.Controllers
 {
     public partial class ApiController : BaseController
     {
+
+        public ApiController(
+            UserManager userManager,
+            ILoggerFactory loggerFactory,
+            IConfiguration configuration) : base(userManager, loggerFactory, configuration)
+        {
+            _configuration = configuration;
+            Logger = loggerFactory.CreateLogger<HomeController>();
+        }
+
         [Authorize]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public async Task<IActionResult> UnlockConnector(string Id)
@@ -33,13 +43,18 @@ namespace OCPP.Core.Management.Controllers
             {
                 try
                 {
-                    using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                    // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                     {
                         ChargePoint chargePoint = dbContext.ChargePoints.Find(Id);
                         if (chargePoint != null)
                         {
-                            string serverApiUrl = base.Config.GetValue<string>("ServerApiUrl");
-                            string apiKeyConfig = base.Config.GetValue<string>("ApiKey");
+                            string serverApiUrl = _configuration.GetValue<string>("ServerApiUrl");
+                            string apiKeyConfig = _configuration.GetValue<string>("ApiKey");
                             if (!string.IsNullOrEmpty(serverApiUrl))
                             {
                                 try

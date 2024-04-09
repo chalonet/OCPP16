@@ -5,6 +5,7 @@ using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Configuration;
+using System.Linq;
 
 #nullable disable
 
@@ -12,16 +13,10 @@ namespace OCPP.Core.Database
 {
     public partial class OCPPCoreContext : DbContext
     {
-        private IConfiguration _configuration;
-
-        public OCPPCoreContext(IConfiguration config) : base()
-        {
-            _configuration = config;
-        }
-
         public OCPPCoreContext(DbContextOptions<OCPPCoreContext> options)
             : base(options)
         {
+            
         }
 
         public virtual DbSet<ChargePoint> ChargePoints { get; set; }
@@ -30,26 +25,39 @@ namespace OCPP.Core.Database
         public virtual DbSet<ConnectorStatusView> ConnectorStatusViews { get; set; }
         public virtual DbSet<MessageLog> MessageLogs { get; set; }
         public virtual DbSet<Transaction> Transactions { get; set; }
+        public virtual DbSet<Usuario> Usuarios { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                string sqlConnString = _configuration.GetConnectionString("SqlServer");
-                string liteConnString = _configuration.GetConnectionString("SQLite");
-                if (!string.IsNullOrWhiteSpace(sqlConnString))
-                {
-                    optionsBuilder.UseSqlServer(sqlConnString);
-                }
-                else if (!string.IsNullOrWhiteSpace(liteConnString))
-                {
-                    optionsBuilder.UseSqlite(liteConnString);
-                }
-            }
-        }
+        
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Usuario>(entity =>
+            {
+                entity.ToTable("Usuarios");
+
+                entity.Property(e => e.UserId)
+                    .HasColumnName("UserId") // Nombre del campo en la base de datos
+                    .IsRequired(); 
+
+                entity.Property(e => e.Username)
+                    .HasColumnName("Username") // Nombre del campo en la base de datos
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Password)
+                    .HasColumnName("Password") // Nombre del campo en la base de datos
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Role)
+                    .HasColumnName("Role") // Nombre del campo en la base de datos
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.HasKey(e => e.UserId); // Especifica la clave primaria
+            });
+        
+
             modelBuilder.Entity<ChargePoint>(entity =>
             {
                 entity.ToTable("ChargePoint");

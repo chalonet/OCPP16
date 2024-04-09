@@ -8,7 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
 using OCPP.Core.Server.Messages_OCPP16;
-
+using Microsoft.EntityFrameworkCore;
 namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP16 : ControllerBase
@@ -21,12 +21,15 @@ namespace OCPP.Core.Server
             get { return "16"; }
         }
 
+
         /// <summary>
         /// Constructor
         /// </summary>
-        public ControllerOCPP16(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus) :
-            base(config, loggerFactory, chargePointStatus)
+        /// 
+        public ControllerOCPP16(IConfiguration configuration, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus)
+        : base(configuration, loggerFactory, chargePointStatus)
         {
+            _configuration = configuration;
             Logger = loggerFactory.CreateLogger(typeof(ControllerOCPP16));
         }
 
@@ -133,7 +136,12 @@ namespace OCPP.Core.Server
 
                     if (doLog)
                     {
-                        using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
+                        // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                         {
                             MessageLog msgLog = new MessageLog();
                             msgLog.ChargePointId = chargePointId;

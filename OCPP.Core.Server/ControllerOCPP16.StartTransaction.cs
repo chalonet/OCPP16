@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Server.Messages_OCPP16;
+using Microsoft.EntityFrameworkCore;
 
 namespace OCPP.Core.Server
 {
@@ -44,7 +45,12 @@ namespace OCPP.Core.Server
                 {
                     try
                     {
-                        using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
+                        // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                         {
                             ChargeTag ct = dbContext.Find<ChargeTag>(idTag);
                             if (ct != null)
@@ -103,7 +109,12 @@ namespace OCPP.Core.Server
                 {
                     try
                     {
-                        using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
+                        // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                         {
                             Transaction transaction = new Transaction();
                             transaction.ChargePointId = ChargePointStatus?.Id;

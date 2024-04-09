@@ -1,6 +1,4 @@
-﻿
-
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -11,12 +9,14 @@ using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
+using Microsoft.EntityFrameworkCore;
 
 namespace OCPP.Core.Management.Controllers
 {
     public partial class ApiController : BaseController
     {
         private readonly IStringLocalizer<ApiController> _localizer;
+        private readonly IConfiguration _configuration;
 
         public ApiController(
             UserManager userManager,
@@ -46,7 +46,12 @@ namespace OCPP.Core.Management.Controllers
             {
                 try
                 {
-                    using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                    // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                     {
                         ChargePoint chargePoint = dbContext.ChargePoints.Find(Id);
                         if (chargePoint != null)
@@ -126,7 +131,7 @@ namespace OCPP.Core.Management.Controllers
                                         }
                                         else
                                         {
-                                            Logger.LogError("Reset: Result of API  request => httpStatus={0}", response.StatusCode);
+                                            Logger.LogError("Reset: Result of API request => httpStatus={0}", response.StatusCode);
                                             httpStatuscode = (int)HttpStatusCode.OK;
                                             resultContent = _localizer["ResetError"];
                                         }

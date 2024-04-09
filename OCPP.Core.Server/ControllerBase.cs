@@ -12,11 +12,14 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Schema;
 using OCPP.Core.Database;
 using OCPP.Core.Server.Messages_OCPP16;
+using Microsoft.EntityFrameworkCore;
 
 namespace OCPP.Core.Server
 {
+    
     public partial class ControllerBase
     {
+        private readonly IConfiguration _configuration;
         /// <summary>
         /// Internal string for OCPP protocol version
         /// </summary>
@@ -42,7 +45,7 @@ namespace OCPP.Core.Server
         /// </summary>
         public ControllerBase(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus)
         {
-            Configuration = config;
+            _configuration  = config;
 
             if (chargePointStatus != null)
             {
@@ -115,7 +118,12 @@ namespace OCPP.Core.Server
         {
             try
             {
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
+                // Construir DbContextOptions usando IConfiguration
+                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+
+                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
+                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
                     ConnectorStatus connectorStatus = dbContext.Find<ConnectorStatus>(ChargePointStatus.Id, connectorId);
                     if (connectorStatus == null)

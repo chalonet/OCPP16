@@ -153,3 +153,26 @@ GO
 ALTER TABLE [dbo].[ChargeTags]
 ADD [ChargingTime] [int] NULL;
 GO
+
+ALTER TABLE [dbo].[Transactions] DROP CONSTRAINT [FK_Transactions_ChargePoint];
+GO
+
+ALTER TABLE [dbo].[Transactions]  WITH CHECK ADD CONSTRAINT [FK_Transactions_ChargePoint] FOREIGN KEY([ChargePointId])
+REFERENCES [dbo].[ChargePoint] ([ChargePointId])
+ON DELETE CASCADE;
+GO
+
+-- Crear la tabla con la nueva definición
+CREATE TABLE dbo.Usuarios (
+    id INT IDENTITY(1,1) PRIMARY KEY, -- Campo de identificación autoincremental
+    Username NVARCHAR(50),
+    Password NVARCHAR(50),
+    Role NVARCHAR(50)
+);
+GO
+-- Insertar datos en la nueva tabla
+INSERT INTO dbo.Usuarios (Username, Password, Role)
+VALUES ('superadmin', '1234', 'SuperAdmin'),
+       ('admin', '1234', 'Administrator'),
+       ('user', '1234', 'User');
+GO

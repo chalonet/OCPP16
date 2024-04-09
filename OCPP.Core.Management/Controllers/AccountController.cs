@@ -1,27 +1,29 @@
-﻿
-
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace OCPP.Core.Management.Controllers
 {
     [Authorize]
     public class AccountController : BaseController
     {
+        private readonly OCPPCoreContext _dbContext;
+
         public AccountController(
             UserManager userManager,
             ILoggerFactory loggerFactory,
-            IConfiguration config) : base(userManager, loggerFactory, config)
+            IConfiguration config,
+            OCPPCoreContext dbContext) : base(userManager, loggerFactory, config)
         {
             Logger = loggerFactory.CreateLogger<AccountController>();
+            _dbContext = dbContext;
         }
 
         // GET: /Account/Login
@@ -37,38 +39,45 @@ namespace OCPP.Core.Management.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(UserModel userModel, string returnUrl = null)
+        public async Task<IActionResult> Login(UserViewModel uvm, string returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
             if (ModelState.IsValid)
             {
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                await UserManager.SignIn(this.HttpContext, userModel, false);
-                if (userModel != null && !string.IsNullOrWhiteSpace(userModel.Username))
+                var user = await _dbContext.Usuarios
+                    .Where(u => u.Username == uvm.Username)
+                    .FirstOrDefaultAsync();
+
+                if (user != null && user.Password == uvm.Password)
                 {
-                    Logger.LogInformation("User '{0}' logged in", userModel.Username);
+                    await UserManager.SignIn(HttpContext, uvm, false);
+                    Logger.LogInformation("User '{0}' logged in", uvm.Username);
+                    
+                    // Limpiar los datos del modelo de usuario (opcional)
+                    uvm = new UserViewModel();
+
+                    // Redirigir al usuario a la página deseada después del inicio de sesión exitoso
                     return RedirectToLocal(returnUrl);
                 }
                 else
                 {
-                    Logger.LogInformation("Invalid login attempt: User '{0}'", userModel.Username);
+                    Logger.LogInformation("Invalid login attempt: User '{0}'", uvm.Username);
                     ModelState.AddModelError(string.Empty, "Invalid login attempt");
-                    return View(userModel);
                 }
             }
 
-            // If we got this far, something failed, redisplay form
-            return View(userModel);
+            // Si llegamos aquí, algo falló o la autenticación no fue exitosa, redirigir al usuario a la página de inicio de sesión
+            return View(uvm);
         }
 
-        [AllowAnonymous]
-        public async Task<IActionResult> Logout(UserModel userModel)
-        {
-            Logger.LogInformation("Signing our user '{0}'", userModel.Username);
-            await UserManager.SignOut(this.HttpContext);
 
-            return RedirectToAction(nameof(AccountController.Login), "Account");
+
+        [AllowAnonymous]
+        public async Task<IActionResult> Logout(UserViewModel userModel)
+        {
+            Logger.LogInformation("Signing out user '{0}'", userModel.Username);
+            await UserManager.SignOut(HttpContext);
+            return RedirectToAction(nameof(Login));
         }
 
         private IActionResult RedirectToLocal(string returnUrl)
@@ -79,7 +88,7 @@ namespace OCPP.Core.Management.Controllers
             }
             else
             {
-                return RedirectToAction(nameof(HomeController.Index), Constants.HomeController);
+                return RedirectToAction(nameof(HomeController.Index), "Home");
             }
         }
     }
