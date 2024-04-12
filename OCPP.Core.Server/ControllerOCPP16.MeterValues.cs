@@ -1,29 +1,5 @@
 ﻿
 
-/*
- http://www.diva-portal.se/smash/get/diva2:838105/FULLTEXT01.pdf
-
-    Measurand values                    Description
-    Energy.Active.Import.Register       Energy imported by EV (Wh of kWh)
-    Power.Active.Import                 Instantaneous active power imported by EV (W or kW)
-    Current.Import                      Instantaneous current flow to EV (A)
-    Voltage                             AC RMS supply voltage (V)
-    Temperature                         Temperature reading inside the charge point 
-
- <cs:meterValuesRequest>
-   <cs:connectorId>0</cs:connectorId>
-   <cs:transactionId>170</cs:transactionId>
-   <cs:values>
-     <cs:timestamp>2014-12-03T10:52:59.410Z</cs:timestamp>
-     <cs:value cs:measurand="Current.Import" cs:unit="Amp">41.384</cs:value>
-     <cs:value cs:measurand="Voltage" cs:unit="Volt">226.0</cs:value>
-     <cs:value cs:measurand="Power.Active.Import" cs:unit="W">7018</cs:value>
-     <cs:value cs:measurand="Energy.Active.Import.Register" cs:unit="Wh">2662</cs:value>
-     <cs:value cs:measurand="Temperature" cs:unit="Celsius">24</cs:value>
-   </cs:values>
- </cs:meterValuesRequest>
- */
-
 using System;
 using System.Collections.Generic;
 using System.Globalization;

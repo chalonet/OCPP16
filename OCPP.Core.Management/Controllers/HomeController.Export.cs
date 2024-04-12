@@ -42,50 +42,37 @@ namespace OCPP.Core.Management.Controllers
                 int days = 30;
                 if (ts == "2")
                 {
-                    // 90 days
                     days = 90;
                     tlvm.Timespan = 2;
                 }
                 else if (ts == "3")
                 {
-                    // 365 days
                     days = 365;
                     tlvm.Timespan = 3;
                 }
                 else
                 {
-                    // 30 days
                     days = 30;
                     tlvm.Timespan = 1;
                 }
 
                 string currentConnectorName = string.Empty;
-                // Construir DbContextOptions usando IConfiguration
                     var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
                     optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
 
-                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
                     using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
                     Logger.LogTrace("Export: Loading charge points...");
                     tlvm.ConnectorStatuses = dbContext.ConnectorStatuses.ToList<ConnectorStatus>();
 
-                    // Preferred: use specific connector name
                     foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
                     {
                         if (cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)
                         {
                             currentConnectorName = cs.ConnectorName;
-                            /*
-                            if (string.IsNullOrEmpty(tlvm.CurrentConnectorName))
-                            {
-                                currentConnectorName = $"{Id}:{cs.ConnectorId}";
-                            }
-                            */
                             break;
                         }
                     }
-                    // default: combined name with charge point and connector
                     if (string.IsNullOrEmpty(currentConnectorName))
                     {
                         tlvm.ChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
@@ -99,12 +86,10 @@ namespace OCPP.Core.Management.Controllers
                         }
                         if (string.IsNullOrEmpty(currentConnectorName))
                         {
-                            // Fallback: ID + connector
                             currentConnectorName = $"{Id}:{currentConnectorId}";
                         }
                     }
 
-                    // load charge tags for name resolution
                     Logger.LogTrace("Export: Loading charge tags...");
                     List<ChargeTag> chargeTags = dbContext.ChargeTags.ToList<ChargeTag>();
                     tlvm.ChargeTags = new Dictionary<string, ChargeTag>();
@@ -212,11 +197,9 @@ namespace OCPP.Core.Management.Controllers
                 {
                     if (value.Contains('"'))
                     {
-                        // replace '"' with '""'
                         value.Replace("\"", "\"\"");
                     }
 
-                    // put value in "
                     value = string.Format("\"{0}\"", value);
                 }
             }

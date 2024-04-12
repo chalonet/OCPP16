@@ -22,7 +22,7 @@ namespace OCPP.Core.Management
 
         public async Task SignIn(HttpContext httpContext, UserViewModel user, bool isPersistent = false)
         {
-            var usuario = await _dbContext.Usuarios.FirstOrDefaultAsync(u => u.Username == user.Username && u.Password == user.Password);
+            var usuario = await _dbContext.Users.FirstOrDefaultAsync(u => u.Username == user.Username && u.Password == user.Password);
             if (usuario != null)
             {
                 var claims = new List<Claim>
@@ -51,9 +51,9 @@ namespace OCPP.Core.Management
             await httpContext.SignOutAsync();
         }
 
-        public async Task<Usuario> GetUser(string username)
+        public async Task<User> GetUser(string username)
         {
-            return await _dbContext.Usuarios.FirstOrDefaultAsync(u => u.Username == username);
+            return await _dbContext.Users.FirstOrDefaultAsync(u => u.Username == username);
         }
     }
 }

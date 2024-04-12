@@ -34,16 +34,41 @@ namespace OCPP.Core.Management.Controllers
                 ViewBag.DatePattern = CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern;
                 ViewBag.Language = CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
 
-                // Construir DbContextOptions usando IConfiguration
                     var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
                     optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
 
-                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
                     using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
-                    Logger.LogTrace("Connector: Loading connectors...");
-                    List<ConnectorStatus> dbConnectorStatuses = dbContext.ConnectorStatuses.ToList<ConnectorStatus>();
-                    Logger.LogInformation("Connector: Found {0} connectors", dbConnectorStatuses.Count);
+
+                    int authenticatedCompanyId = 0; 
+                    if (User.Identity.IsAuthenticated)
+                    {
+                        var authenticatedUserName = User.Identity.Name;
+
+                        var authenticatedUser = dbContext.Users.FirstOrDefault(u => u.Username == authenticatedUserName);
+
+                        if (authenticatedUser != null)
+                        {
+                            if (authenticatedUser.Role == Constants.AdminRoleName)
+                            {
+                                var associatedCompany = dbContext.Companies.FirstOrDefault(c => c.AdministratorId == authenticatedUser.UserId);
+
+                                if (associatedCompany != null)
+                                {
+                                    authenticatedCompanyId = associatedCompany.CompanyId;
+                                }
+                            }
+                        }
+                    }
+
+                    Logger.LogTrace("ConectorStatus: Loading Conector Status...");
+
+                    List<ConnectorStatus> dbConnectorStatuses = dbContext.ConnectorStatuses
+                        .Where(cs => dbContext.ChargePoints.Any(cp => cp.ChargePointId == cs.ChargePointId && cp.CompanyId == authenticatedCompanyId))
+                        .ToList();
+
+                    
+
 
                     ConnectorStatus currentConnectorStatus = null;
                     if (!string.IsNullOrEmpty(Id) && !string.IsNullOrEmpty(ConnectorId))
@@ -64,17 +89,15 @@ namespace OCPP.Core.Management.Controllers
                     {
                         if (currentConnectorStatus.ChargePointId == Id)
                         {
-                            // Save connector
                             currentConnectorStatus.ConnectorName = csvm.ConnectorName;
                             dbContext.SaveChanges();
-                            Logger.LogInformation("Connector: Edit => Connector saved: {0} / {1} => '{2}'", csvm.ChargePointId, csvm.ConnectorId, csvm.ConnectorName);
+                            Logger.LogInformation("Connector: Edit => Connector saved: {0} / {1} => '{2}'", csvm.ChargePointId, csvm.ConnectorId, csvm.CompanyId );
                         }
 
                         return RedirectToAction("Connector", new { Id = "" });
                     }
                     else
                     {
-                        // List all charge tags
                         csvm = new ConnectorStatusViewModel();
                         csvm.ConnectorStatuses = dbConnectorStatuses;
 

@@ -11,7 +11,6 @@ namespace OCPP.Core.Server
 {
     public partial class ControllerOCPP16
     {
-        private readonly IConfiguration _configuration;
 
 
         public string HandleAuthorize(OCPPMessage msgIn, OCPPMessage msgOut)
@@ -33,7 +32,7 @@ namespace OCPP.Core.Server
                 {
                     // Construir DbContextOptions usando IConfiguration
                     var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
-                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+                    optionsBuilder.UseSqlServer(Configuration.GetConnectionString("SqlServer"));
 
                     // Crear una instancia de OCPPCoreContext usando DbContextOptions
                     using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))

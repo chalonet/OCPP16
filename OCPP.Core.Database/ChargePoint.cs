@@ -20,7 +20,8 @@ namespace OCPP.Core.Database
         public string Username { get; set; }
         public string Password { get; set; }
         public string ClientCertThumb { get; set; }
-
+        public int CompanyId { get; set; }
+        public virtual Company Company { get; set; }
         public virtual ICollection<Transaction> Transactions { get; set; }
     }
 }

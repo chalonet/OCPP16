@@ -47,7 +47,7 @@ namespace OCPP.Core.Server
                     {
                         // Construir DbContextOptions usando IConfiguration
                     var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
-                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+                    optionsBuilder.UseSqlServer(Configuration.GetConnectionString("SqlServer"));
 
                     // Crear una instancia de OCPPCoreContext usando DbContextOptions
                     using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
@@ -111,7 +111,7 @@ namespace OCPP.Core.Server
                     {
                         // Construir DbContextOptions usando IConfiguration
                     var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
-                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+                    optionsBuilder.UseSqlServer(Configuration.GetConnectionString("SqlServer"));
 
                     // Crear una instancia de OCPPCoreContext usando DbContextOptions
                     using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))

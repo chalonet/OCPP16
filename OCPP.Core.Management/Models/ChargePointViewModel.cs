@@ -1,6 +1,4 @@
-﻿
-
-using OCPP.Core.Database;
+﻿using OCPP.Core.Database;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -13,8 +11,9 @@ namespace OCPP.Core.Management.Models
     {
         public List<ChargePoint> ChargePoints { get; set; }
 
-        public string CurrentId { get; set; }
+        public List<Company> Companies { get; set; }
 
+        public string CurrentId { get; set; }
 
         [Required, StringLength(100)]
         public string ChargePointId { get; set; }
@@ -33,5 +32,9 @@ namespace OCPP.Core.Management.Models
 
         [StringLength(100)]
         public string ClientCertThumb { get; set; }
+
+        public Company Company { get; set; }
+
+        public int CompanyId { get; set; }
     }
 }

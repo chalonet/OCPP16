@@ -1,6 +1,4 @@
-﻿
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -107,44 +105,65 @@ namespace OCPP.Core.Management.Controllers
                 }
                 #endregion
 
-                // Construir DbContextOptions usando IConfiguration
-                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
-                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+                var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
 
-                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
-                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
+                using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
-                    // List of charge point status (OCPP messages) with latest transaction (if one exist)
+                    List<Company> companies = dbContext.Companies.ToList();
+                    overviewModel.Companies = companies;
+
                     List<ConnectorStatusView> connectorStatusViewList = dbContext.ConnectorStatusViews.ToList<ConnectorStatusView>();
 
-                    // Count connectors for every charge point (=> naming scheme)
                     Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
                     foreach(ConnectorStatusView csv in connectorStatusViewList)
                     {
                         if (dictConnectorCount.ContainsKey(csv.ChargePointId))
                         {
-                            // > 1 connector
                             dictConnectorCount[csv.ChargePointId] = dictConnectorCount[csv.ChargePointId] + 1;
                         }
                         else
                         {
-                            // first connector
                             dictConnectorCount.Add(csv.ChargePointId, 1);
                         }
                     }
+                    var authenticatedAdministratorID = "";
+                    if (User.Identity.IsAuthenticated)
+                    {
+                        var authenticatedUserName = User.Identity.Name;
 
+                        var authenticatedUser = dbContext.Users.FirstOrDefault(u => u.Username == authenticatedUserName);
 
-                    // List of configured charge points
-                    List<ChargePoint> dbChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
+                        if (authenticatedUser != null)
+                        {
+                            if (authenticatedUser.Role == Constants.AdminRoleName)
+                            {
+                                authenticatedAdministratorID = authenticatedUser.UserId.ToString();
+                            }
+                        }
+                    }
+
+                    Logger.LogTrace("ChargePoint: Loading charge points...");
+
+                    List<ChargePoint> dbChargePoints;
+                    if (!User.IsInRole(Constants.SuperAdminRoleName))
+                    {
+                        dbChargePoints = dbContext.ChargePoints
+                            .Where(cp => cp.Company.AdministratorId.ToString() == authenticatedAdministratorID)
+                            .ToList();
+                    }
+                    else
+                    {
+                        dbChargePoints = dbContext.ChargePoints.ToList();
+                    }
                     if (dbChargePoints != null)
                     {
-                        // Iterate through all charge points in database
                         foreach(ChargePoint cp in dbChargePoints)
                         {
+                            
                             ChargePointStatus cpOnlineStatus = null;
                             dictOnlineStatus.TryGetValue(cp.ChargePointId, out cpOnlineStatus);
 
-                            // Preference: Check for connectors status in database
                             bool foundConnectorStatus = false;
                             if (connectorStatusViewList != null)
                             {
@@ -156,25 +175,22 @@ namespace OCPP.Core.Management.Controllers
 
                                         ChargePointsOverviewViewModel cpovm = new ChargePointsOverviewViewModel();
                                         cpovm.ChargePointId = cp.ChargePointId;
+                                        cpovm.CompanyId = cp.CompanyId;
                                         cpovm.ConnectorId = connStatus.ConnectorId;
                                         if (string.IsNullOrWhiteSpace(connStatus.ConnectorName))
                                         {
-                                            // No connector name specified => use default
                                             if (dictConnectorCount.ContainsKey(cp.ChargePointId) &&
                                                 dictConnectorCount[cp.ChargePointId] > 1)
                                             {
-                                                // more than 1 connector => "<charge point name>:<connector no.>"
                                                 cpovm.Name = $"{cp.Name}:{connStatus.ConnectorId}";
                                             }
                                             else
                                             {
-                                                // only 1 connector => "<charge point name>"
                                                 cpovm.Name = cp.Name;
                                             }
                                         }
                                         else
                                         {
-                                            // Connector has name override name specified
                                             cpovm.Name = connStatus.ConnectorName;
                                         }
                                         cpovm.Online = cpOnlineStatus != null;
@@ -196,7 +212,6 @@ namespace OCPP.Core.Management.Controllers
                                             cpovm.StartTime = connStatus.StartTime;
                                             cpovm.StopTime = connStatus.StopTime;
 
-                                            // default status: active transaction or not?
                                             cpovm.ConnectorStatus = (cpovm.StopTime.HasValue) ? ConnectorStatusEnum.Available : ConnectorStatusEnum.Occupied;
                                         }
                                         else
@@ -206,11 +221,9 @@ namespace OCPP.Core.Management.Controllers
                                             cpovm.StartTime = null;
                                             cpovm.StopTime = null;
 
-                                            // default status: Available
                                             cpovm.ConnectorStatus = ConnectorStatusEnum.Available;
                                         }
 
-                                        // Add current charge data to view model
                                         if (cpovm.ConnectorStatus == ConnectorStatusEnum.Occupied &&
                                             onlineConnectorStatus != null)
                                         {
@@ -234,10 +247,8 @@ namespace OCPP.Core.Management.Controllers
                                     }
                                 }
                             }
-                            // Fallback: assume 1 connector and show main charge point
                             if (foundConnectorStatus == false)
                             {
-                                // no connector status found in DB => show configured charge point in overview
                                 ChargePointsOverviewViewModel cpovm = new ChargePointsOverviewViewModel();
                                 cpovm.ChargePointId = cp.ChargePointId;
                                 cpovm.ConnectorId = 0;
@@ -255,7 +266,7 @@ namespace OCPP.Core.Management.Controllers
             }
             catch (Exception exp)
             {
-                Logger.LogError(exp, "Index: Error loading charge points from database");
+                Logger.LogError(exp, "Index: Error loading charge points from the database");
                 TempData["ErrMessage"] = exp.Message;
                 return RedirectToAction("Error", new { Id = "" });
             }

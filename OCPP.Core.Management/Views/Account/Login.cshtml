@@ -41,24 +41,18 @@
 
 @section Scripts {
     <script>
-        // Manejar el envío del formulario y redireccionar después de la autenticación
         document.getElementById('loginForm').addEventListener('submit', function(event) {
-            // Evitar que el formulario se envíe de forma predeterminada
             event.preventDefault();
             
-            // Obtener los datos del formulario
             var formData = new FormData(event.target);
             
-            // Realizar una solicitud de autenticación asincrónica (aquí debes agregar tu lógica para autenticar al usuario)
             fetch('/Account/Login', {
                 method: 'POST',
                 body: formData
             })
             .then(response => {
-                // Verificar si la autenticación fue exitosa (aquí debes agregar tu lógica de verificación)
                 if (response.ok) {
-                    // Redireccionar al usuario después de la autenticación
-                    window.location.href = '@Url.Action("Index", "Home")'; // Cambia esto por la ruta deseada
+                    window.location.href = '@Url.Action("Index", "Home")';
                 }
             })
             .catch(error => {

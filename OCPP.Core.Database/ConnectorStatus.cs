@@ -18,6 +18,8 @@ namespace OCPP.Core.Database
 
         public double? LastMeter { get; set; }
         public DateTime? LastMeterTime { get; set; }
+        public int CompanyId { get; set; }
+        public virtual Company Company { get; set; }
 
         
     }

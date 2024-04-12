@@ -13,10 +13,12 @@
             <tr>
                 <th scope="col">@Localizer["TagId"]</th>
                 <th scope="col">@Localizer["TagName"]</th>
+                <th scope="col">@Localizer["Email"]</th>
                 <th scope="col">@Localizer["GroupName"]</th>
                 <th scope="col">@Localizer["ExpiryDate"]</th>
                 <th scope="col">@Localizer["Blocked"]</th>
                 <th scope="col">@Localizer["ChargingTime (min)"]</th> 
+                <th scope="col">@Localizer["CompanyName"]</th> 
                 <th scope="col">@Localizer["Actions"]</th>
             </tr>
         </thead>
@@ -28,10 +30,36 @@
                     <tr class="table-row" data-href='@Url.Action("ChargeTag", Constants.HomeController, new { id = tag.TagId })'>
                         <td>@tag.TagId</td>
                         <td>@tag.TagName</td>
+                        <td>@tag.Email</td>
                         <td>@tag.ParentTagId</td>
                         <td>@((tag.ExpiryDate != null) ? tag.ExpiryDate.Value.ToString(ViewBag.DatePattern) : "-")</td>
                         <td>@((tag.Blocked == true) ? "1" : "0")</td>
-                        <td>@(tag.ChargingTime != null ? tag.ChargingTime.Value: 0)</td>
+                        <td>
+                            <div class="input-group">
+                                <a href="@Url.Action("EditChargingTime", "Home", new { id = tag.TagId, email = tag.Email })" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-clock"></i>
+                                    <span class="ml-2">@Localizer["Edit Charging Time"]</span> 
+                                    <span class="badge badge-primary ml-2">
+                                        @(tag.ChargingTime != null ? tag.ChargingTime.Value + " min" : "0 min")
+                                    </span>
+                                </a>
+                            </div>
+                        </td>
+
+
+                        <td>
+                            @{
+                                var company = Model.Companies.FirstOrDefault(c => c.CompanyId == tag.CompanyId);
+                                if (company != null)
+                                {
+                                    <text>@company.Name</text>
+                                }
+                                else
+                                {
+                                    <text>-</text> 
+                                }
+                            }
+                        </td>
                         <td class="text-center">
                             <div class="btn-group" role="group" aria-label="Actions">
                                 <form method="post" action="@Url.Action("DeleteTag", "Home", new { id = tag.TagId })" onsubmit="return confirm('@Localizer["ConfirmDelete"]');">
@@ -39,6 +67,7 @@
                                 </form>
                                 &nbsp; 
                                 <a href="@Url.Action("EditTag", "Home", new { id = tag.TagId })" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> @Localizer["Edit"]</a>
+                                
                             </div>
                         </td>
                     </tr>

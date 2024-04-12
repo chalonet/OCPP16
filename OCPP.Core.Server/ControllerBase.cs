@@ -19,7 +19,6 @@ namespace OCPP.Core.Server
     
     public partial class ControllerBase
     {
-        private readonly IConfiguration _configuration;
         /// <summary>
         /// Internal string for OCPP protocol version
         /// </summary>
@@ -45,7 +44,7 @@ namespace OCPP.Core.Server
         /// </summary>
         public ControllerBase(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus)
         {
-            _configuration  = config;
+            Configuration  = config;
 
             if (chargePointStatus != null)
             {
@@ -120,7 +119,7 @@ namespace OCPP.Core.Server
             {
                 // Construir DbContextOptions usando IConfiguration
                     var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
-                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+                    optionsBuilder.UseSqlServer(Configuration.GetConnectionString("SqlServer"));
 
                     // Crear una instancia de OCPPCoreContext usando DbContextOptions
                     using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))

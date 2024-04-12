@@ -32,21 +32,19 @@ namespace OCPP.Core.Management.Controllers
                 ViewBag.Language = CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
                 uvm.CurrentUserId = Id;
 
-                // Construir DbContextOptions usando IConfiguration
                     var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
                     optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
 
-                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
                     using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
                     Logger.LogTrace("User: Loading Users...");
-                    List<Usuario> dbUsers = dbContext.Usuarios.ToList<Usuario>();
+                    List<User> dbUsers = dbContext.Users.ToList<User>();
                     Logger.LogInformation("User: Found {0} users", dbUsers.Count);
 
-                    Usuario currentUser = null;
+                    User currentUser = null;
                   if (!string.IsNullOrEmpty(Id) && int.TryParse(Id, out int idValue))
                 {
-                    foreach (Usuario user in dbUsers)
+                    foreach (User user in dbUsers)
                     {
                         if (user.UserId == idValue)
                         {
@@ -76,7 +74,7 @@ namespace OCPP.Core.Management.Controllers
         }
 
         [Authorize]
-        private IActionResult ProcessUserPostRequest(string id, UserViewModel uvm, List<Usuario> dbUsers, Usuario currentUser, OCPPCoreContext dbContext)
+        private IActionResult ProcessUserPostRequest(string id, UserViewModel uvm, List<User> dbUsers, User currentUser, OCPPCoreContext dbContext)
         {
             try
             {
@@ -86,7 +84,6 @@ namespace OCPP.Core.Management.Controllers
                 {
                     Logger.LogTrace("User: Creating new user...");
 
-                    // Crear nuevo usuario
                     if (string.IsNullOrWhiteSpace(uvm.Username))
                     {
                         errorMsg = _localizer["UsernameRequired"].Value;
@@ -95,13 +92,13 @@ namespace OCPP.Core.Management.Controllers
 
                     if (string.IsNullOrEmpty(errorMsg))
                     {
-                        // Guardar usuario en la BD
                         {
-                            Usuario newUser = new Usuario();
+                            User newUser = new User();
                             newUser.Username = uvm.Username;
+                            newUser.Email = uvm.Email;
                             newUser.Password = uvm.Password;
                             newUser.Role = uvm.Role;
-                            dbContext.Usuarios.Add(newUser);
+                            dbContext.Users.Add(newUser);
                             dbContext.SaveChanges();
                             Logger.LogInformation("User: New => user saved: {0}", uvm.Username);
                         }
@@ -114,8 +111,8 @@ namespace OCPP.Core.Management.Controllers
                 }
                 else if (currentUser != null && currentUser.UserId.ToString() == id)
                 {
-                    // Editar usuario existente
                     currentUser.Username = uvm.Username;
+                    currentUser.Email = uvm.Email;
                     currentUser.Password = uvm.Password;
                     currentUser.Role = uvm.Role;
                     dbContext.SaveChanges();
@@ -133,17 +130,17 @@ namespace OCPP.Core.Management.Controllers
         }
 
          [Authorize]
-        private IActionResult DisplayUserForm(string Id, UserViewModel uvm, List<Usuario> dbUsers, Usuario currentUser)
+        private IActionResult DisplayUserForm(string Id, UserViewModel uvm, List<User> dbUsers, User currentUser)
         {
-            // Listar todas las etiquetas de carga
             uvm = new UserViewModel();
-            uvm.Usuarios = dbUsers;
+            uvm.Users = dbUsers;
             uvm.CurrentUserId = Id;
 
             if (currentUser != null)
             {
                 uvm.UserId = currentUser.UserId;
                 uvm.Username = currentUser.Username;
+                uvm.Email = currentUser.Email;
                 uvm.Password = currentUser.Password;
                 uvm.Role = currentUser.Role;
             }
@@ -169,27 +166,24 @@ namespace OCPP.Core.Management.Controllers
                 ViewBag.Language = CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
                 uvm.CurrentUserId = id;
 
-                // Construir DbContextOptions usando IConfiguration
                 var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
                 optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
 
-                // Crear una instancia de OCPPCoreContext usando DbContextOptions
                 using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
-                    Usuario currentUser = null;
+                    User currentUser = null;
                     if (!string.IsNullOrEmpty(id))
                     {
-                        // Convertir id a mayúsculas
                         string idUpper = id.ToUpper();
-                        currentUser = dbContext.Usuarios.FirstOrDefault(u => u.UserId.ToString().ToUpper() == idUpper);
+                        currentUser = dbContext.Users.FirstOrDefault(u => u.UserId.ToString().ToUpper() == idUpper);
                     }
 
                     if (currentUser != null)
                     {
                         if (Request.Method == "POST")
                         {
-                            // Editar el usuario existente
                             currentUser.Username = uvm.Username;
+                            currentUser.Email = uvm.Email;
                             currentUser.Password = uvm.Password;
                             currentUser.Role = uvm.Role;
                             dbContext.SaveChanges();
@@ -199,9 +193,9 @@ namespace OCPP.Core.Management.Controllers
                         }
                         else
                         {
-                            // Rellenar el modelo de vista con los datos actuales del usuario
                             uvm.UserId = currentUser.UserId;
                             uvm.Username = currentUser.Username;
+                            uvm.Email = currentUser.Email;
                             uvm.Password = currentUser.Password;
                             uvm.Role = currentUser.Role;
 
@@ -236,20 +230,17 @@ namespace OCPP.Core.Management.Controllers
                     return RedirectToAction("Error", new { Id = "" });
                 }
 
-                // Construir DbContextOptions usando IConfiguration
                 var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
                 optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
 
-                // Crear una instancia de OCPPCoreContext usando DbContextOptions
                 using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
-                    // Obtener todos los usuarios y filtrar en memoria
-                    List<Usuario> allUsers = dbContext.Usuarios.ToList();
-                    Usuario currentUser = allUsers.FirstOrDefault(u => u.UserId.ToString().Equals(id, StringComparison.InvariantCultureIgnoreCase));
+                    List<User> allUsers = dbContext.Users.ToList();
+                    User currentUser = allUsers.FirstOrDefault(u => u.UserId.ToString().Equals(id, StringComparison.InvariantCultureIgnoreCase));
 
                     if (currentUser != null)
                     {
-                        dbContext.Usuarios.Remove(currentUser);
+                        dbContext.Users.Remove(currentUser);
                         dbContext.SaveChanges();
                         Logger.LogInformation("DeleteUser: user deleted: {0} / {1}", currentUser.UserId, currentUser.Username);
 

@@ -29,7 +29,6 @@ namespace OCPP.Core.Server
         public ControllerOCPP16(IConfiguration configuration, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus)
         : base(configuration, loggerFactory, chargePointStatus)
         {
-            _configuration = configuration;
             Logger = loggerFactory.CreateLogger(typeof(ControllerOCPP16));
         }
 
@@ -138,7 +137,7 @@ namespace OCPP.Core.Server
                     {
                         // Construir DbContextOptions usando IConfiguration
                     var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
-                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+                    optionsBuilder.UseSqlServer(Configuration.GetConnectionString("SqlServer"));
 
                     // Crear una instancia de OCPPCoreContext usando DbContextOptions
                     using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))

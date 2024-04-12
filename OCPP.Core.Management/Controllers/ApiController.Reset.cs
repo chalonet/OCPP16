@@ -46,11 +46,9 @@ namespace OCPP.Core.Management.Controllers
             {
                 try
                 {
-                    // Construir DbContextOptions usando IConfiguration
                     var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
                     optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
 
-                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
                     using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                     {
                         ChargePoint chargePoint = dbContext.ChargePoints.Find(Id);
@@ -70,9 +68,8 @@ namespace OCPP.Core.Management.Controllers
                                         }
                                         Uri uri = new Uri(serverApiUrl);
                                         uri = new Uri(uri, $"Reset/{Uri.EscapeDataString(Id)}");
-                                        httpClient.Timeout = new TimeSpan(0, 0, 4); // use short timeout
+                                        httpClient.Timeout = new TimeSpan(0, 0, 4); 
 
-                                        // API-Key authentication?
                                         if (!string.IsNullOrWhiteSpace(apiKeyConfig))
                                         {
                                             httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKeyConfig);
@@ -125,7 +122,6 @@ namespace OCPP.Core.Management.Controllers
                                         }
                                         else if (response.StatusCode == HttpStatusCode.NotFound)
                                         {
-                                            // Chargepoint offline
                                             httpStatuscode = (int)HttpStatusCode.OK;
                                             resultContent = _localizer["ResetOffline"];
                                         }

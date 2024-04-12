@@ -13,6 +13,10 @@ namespace OCPP.Core.Management.Models
     {
         public List<ConnectorStatus> ConnectorStatuses { get; set; }
 
+        public List<ChargePoint> ChargePoints { get; set; }
+
+        public List<Company> Companies { get; set; }
+
         public string ChargePointId { get; set; }
 
         public int ConnectorId { get; set; }
@@ -29,6 +33,9 @@ namespace OCPP.Core.Management.Models
         public string ConnectorName { get; set; }
 
         public int TimeConnect { get; set; }
+
+        public int CompanyId { get; set; }
+        public string CompanyName { get; set; }
 
     }
 }

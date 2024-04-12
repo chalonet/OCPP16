@@ -35,7 +35,7 @@ namespace OCPP.Core.Management.Controllers
         {
             try
             {
-                if (User != null && !User.IsInRole(Constants.AdminRoleName)&& !User.IsInRole(Constants.SuperAdminRoleName))
+                if (User != null && !User.IsInRole(Constants.AdminRoleName) && !User.IsInRole(Constants.SuperAdminRoleName))
                 {
                     Logger.LogWarning("ChargePoint: Request by non-administrator: {0}", User?.Identity?.Name);
                     TempData["ErrMsgKey"] = "AccessDenied";
@@ -44,29 +44,49 @@ namespace OCPP.Core.Management.Controllers
 
                 cpvm.CurrentId = Id;
 
-                 // Construir DbContextOptions usando IConfiguration
-                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
-                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+                var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
 
-                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
-                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
+                using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
+                    var authenticatedAdministratorID = "";
+                    if (User.Identity.IsAuthenticated)
+                    {
+                        var authenticatedUserName = User.Identity.Name;
+
+                        var authenticatedUser = dbContext.Users.FirstOrDefault(u => u.Username == authenticatedUserName);
+
+                        if (authenticatedUser != null)
+                        {
+                            if (authenticatedUser.Role == Constants.AdminRoleName)
+                            {
+                                authenticatedAdministratorID = authenticatedUser.UserId.ToString();
+                            }
+                        }
+                    }
+
                     Logger.LogTrace("ChargePoint: Loading charge points...");
-                    List<ChargePoint> dbChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
+
+                    List<ChargePoint> dbChargePoints;
+                    if (!User.IsInRole(Constants.SuperAdminRoleName))
+                    {
+                        dbChargePoints = dbContext.ChargePoints
+                            .Where(cp => cp.Company.AdministratorId.ToString() == authenticatedAdministratorID)
+                            .ToList();
+                    }
+                    else
+                    {
+                        dbChargePoints = dbContext.ChargePoints.ToList();
+                    }
+
                     Logger.LogInformation("ChargePoint: Found {0} charge points", dbChargePoints.Count);
+
+                    List<Company> companies = dbContext.Companies.ToList();
 
                     ChargePoint currentChargePoint = null;
                     if (!string.IsNullOrEmpty(Id))
                     {
-                        foreach (ChargePoint cp in dbChargePoints)
-                        {
-                            if (cp.ChargePointId.Equals(Id, StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                currentChargePoint = cp;
-                                Logger.LogTrace("ChargePoint: Current charge point: {0} / {1}", cp.ChargePointId, cp.Name);
-                                break;
-                            }
-                        }
+                        currentChargePoint = dbChargePoints.FirstOrDefault(cp => cp.ChargePointId.Equals(Id, StringComparison.InvariantCultureIgnoreCase));
                     }
 
                     if (Request.Method == "POST")
@@ -75,7 +95,7 @@ namespace OCPP.Core.Management.Controllers
                         {
                             return CreateChargePoint(cpvm, dbChargePoints);
                         }
-                        else if (currentChargePoint.ChargePointId == Id)
+                        else if (currentChargePoint != null && currentChargePoint.ChargePointId == Id)
                         {
                             Logger.LogTrace("ChargePoint: Saving charge point '{0}'", Id);
                             currentChargePoint.Name = cpvm.Name;
@@ -94,11 +114,11 @@ namespace OCPP.Core.Management.Controllers
                     {
                         cpvm = new ChargePointViewModel();
                         cpvm.ChargePoints = dbChargePoints;
+                        cpvm.Companies = companies; 
                         cpvm.CurrentId = Id;
 
                         if (currentChargePoint != null)
                         {
-                            cpvm = new ChargePointViewModel();
                             cpvm.ChargePointId = currentChargePoint.ChargePointId;
                             cpvm.Name = currentChargePoint.Name;
                             cpvm.Comment = currentChargePoint.Comment;
@@ -108,6 +128,13 @@ namespace OCPP.Core.Management.Controllers
                         }
 
                         string viewName = (!string.IsNullOrEmpty(cpvm.ChargePointId) || Id == "@") ? "ChargePointDetail" : "ChargePointList";
+
+                        var companyId = currentChargePoint?.CompanyId;
+                        var companyName = companyId != null ? dbContext.Companies.FirstOrDefault(c => c.CompanyId == companyId)?.Name : "";
+
+                        ViewBag.CompanyId = companyId;
+                        ViewBag.CompanyName = companyName;
+
                         return View(viewName, cpvm);
                     }
                 }
@@ -130,7 +157,6 @@ namespace OCPP.Core.Management.Controllers
 
                 Logger.LogTrace("ChargePoint: Creating new charge point...");
 
-                // Validaciones para la creación del charge point
                 if (string.IsNullOrWhiteSpace(cpvm.ChargePointId))
                 {
                     errorMsg = _localizer["ChargePointIdRequired"].Value;
@@ -139,12 +165,11 @@ namespace OCPP.Core.Management.Controllers
 
                 if (string.IsNullOrEmpty(errorMsg))
                 {
-                    // Comprobar si ya existe un charge point con el mismo ID
                     foreach (ChargePoint cp in dbChargePoints)
                     {
                         if (cp.ChargePointId.Equals(cpvm.ChargePointId, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            // El ID ya existe
+                            
                             errorMsg = _localizer["ChargePointIdExists"].Value;
                             Logger.LogInformation("ChargePoint: New => charge point ID already exists: {0}", cpvm.ChargePointId);
                             break;
@@ -154,13 +179,37 @@ namespace OCPP.Core.Management.Controllers
 
                 if (string.IsNullOrEmpty(errorMsg))
                 {
-                    // Construir DbContextOptions usando IConfiguration
                     var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
                     optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
 
-                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
                     using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                     {
+
+                        var authenticatedAdministratorID = "";
+                        int companyId = -1;
+                        if (User.Identity.IsAuthenticated)
+                        {
+                            var authenticatedUserName = User.Identity.Name;
+
+                            var authenticatedUser = dbContext.Users.FirstOrDefault(u => u.Username == authenticatedUserName);
+
+                            if (authenticatedUser != null)
+                            {
+                                if (authenticatedUser.Role == Constants.AdminRoleName)
+                                {
+                                    authenticatedAdministratorID = authenticatedUser.UserId.ToString();
+
+                                    var associatedCompany = dbContext.Companies.FirstOrDefault(c => c.AdministratorId == authenticatedUser.UserId);
+
+                                    if (associatedCompany != null)
+                                    {
+                                        companyId = associatedCompany.CompanyId;
+                                    }
+                                }
+                            }
+                        }
+
+
                         ChargePoint newChargePoint = new ChargePoint();
                         newChargePoint.ChargePointId = cpvm.ChargePointId;
                         newChargePoint.Name = cpvm.Name;
@@ -168,6 +217,16 @@ namespace OCPP.Core.Management.Controllers
                         newChargePoint.Username = cpvm.Username;
                         newChargePoint.Password = cpvm.Password;
                         newChargePoint.ClientCertThumb = cpvm.ClientCertThumb;
+                        if (!User.IsInRole(Constants.SuperAdminRoleName))
+                        {
+                            newChargePoint.CompanyId = companyId;
+                        }
+                        else
+                        {
+                            newChargePoint.CompanyId = cpvm.CompanyId;
+                        }
+
+
                         dbContext.ChargePoints.Add(newChargePoint);
                         dbContext.SaveChanges();
                         Logger.LogInformation("ChargePoint: New => charge point saved: {0} / {1}", cpvm.ChargePointId, cpvm.Name);
@@ -189,6 +248,7 @@ namespace OCPP.Core.Management.Controllers
             }
         }
 
+
         
         [Authorize]
         public IActionResult DeleteChargePoint(string id)
@@ -202,11 +262,9 @@ namespace OCPP.Core.Management.Controllers
                     return RedirectToAction("Error", new { Id = "" });
                 }
 
-                // Construir DbContextOptions usando IConfiguration
                     var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
                     optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
 
-                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
                     using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
                     var chargePointToDelete = dbContext.ChargePoints
@@ -246,12 +304,10 @@ namespace OCPP.Core.Management.Controllers
                     return RedirectToAction("Error", new { Id = "" });
                 }
 
-                // Construir DbContextOptions usando IConfiguration
-                    var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
-                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
+                var optionsBuilder = new DbContextOptionsBuilder<OCPPCoreContext>();
+                optionsBuilder.UseSqlServer(_configuration.GetConnectionString("SqlServer"));
 
-                    // Crear una instancia de OCPPCoreContext usando DbContextOptions
-                    using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
+                using (var dbContext = new OCPPCoreContext(optionsBuilder.Options))
                 {
                     var chargePointToEdit = dbContext.ChargePoints
                         .FirstOrDefault(cp => cp.ChargePointId.ToUpper() == id.ToUpper());
@@ -261,10 +317,10 @@ namespace OCPP.Core.Management.Controllers
                         TempData["ErrMsgKey"] = "ChargePointNotFound";
                         return RedirectToAction("Error", new { Id = "" });
                     }
+                    var companies = dbContext.Companies.ToList();
 
                     if (Request.Method == "POST")
                     {
-                        // Validación de datos
                         string errorMsg = ValidateChargePointData(cpvm);
                         if (!string.IsNullOrEmpty(errorMsg))
                         {
@@ -272,12 +328,16 @@ namespace OCPP.Core.Management.Controllers
                             return View("ChargePointDetail", cpvm);
                         }
 
-                        // Actualización de datos del ChargePoint
                         chargePointToEdit.Name = cpvm.Name;
                         chargePointToEdit.Comment = cpvm.Comment;
                         chargePointToEdit.Username = cpvm.Username;
                         chargePointToEdit.Password = cpvm.Password;
                         chargePointToEdit.ClientCertThumb = cpvm.ClientCertThumb;
+                            if (User.IsInRole(Constants.SuperAdminRoleName))
+                            {
+                                chargePointToEdit.CompanyId = cpvm.CompanyId;
+                            }
+                            
 
                         dbContext.SaveChanges();
                         Logger.LogInformation("EditChargePoint: Charge point edited: {0} / {1}", chargePointToEdit.ChargePointId, chargePointToEdit.Name);
@@ -286,7 +346,6 @@ namespace OCPP.Core.Management.Controllers
                     }
                     else
                     {
-                        // Cargar datos del ChargePoint para mostrar en la vista
                         cpvm = new ChargePointViewModel();
                         cpvm.ChargePointId = chargePointToEdit.ChargePointId;
                         cpvm.Name = chargePointToEdit.Name;
@@ -294,6 +353,8 @@ namespace OCPP.Core.Management.Controllers
                         cpvm.Username = chargePointToEdit.Username;
                         cpvm.Password = chargePointToEdit.Password;
                         cpvm.ClientCertThumb = chargePointToEdit.ClientCertThumb;
+
+                        cpvm.Companies = companies;
 
                         return View("ChargePointDetail", cpvm);
                     }
@@ -306,6 +367,7 @@ namespace OCPP.Core.Management.Controllers
                 return RedirectToAction("Error", new { Id = "" });
             }
         }
+
 
         public string ValidateChargePointData(ChargePointViewModel cpvm)
         {

@@ -14,6 +14,7 @@
                 <th scope="col">@Localizer["ChargePointId"]</th>
                 <th scope="col">@Localizer["Name"]</th>
                 <th scope="col">@Localizer["Comment"]</th>
+                <th scope="col">@Localizer["CompanyName"]</th> 
                 <th scope="col">@Localizer["Actions"]</th>
             </tr>
         </thead>
@@ -26,6 +27,19 @@
                         <td>@cp.ChargePointId</td>
                         <td>@cp.Name</td>
                         <td>@cp.Comment</td>
+                        <td>
+                            @{
+                                var company = Model.Companies.FirstOrDefault(c => c.CompanyId == cp.CompanyId);
+                                if (company != null)
+                                {
+                                    <text>@company.Name</text>
+                                }
+                                else
+                                {
+                                    <text>-</text> 
+                                }
+                            }
+                        </td>
                         <td class="text-center">
                             <div class="btn-group" role="group" aria-label="Actions">
                                 <form method="post" action="@Url.Action("DeleteChargePoint", "Home", new { id = cp.ChargePointId })" onsubmit="return confirm('@Localizer["ConfirmDelete"]');">

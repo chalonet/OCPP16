@@ -78,6 +78,28 @@
                                 </div>
                             }
                         </a>
+                        <div class="card-footer bg-light d-flex justify-content-between">
+                            @{
+                                Console.WriteLine("Compañías disponibles:");
+                                foreach (var comp in Model.Companies)
+                                {
+                                    Console.WriteLine($"CompanyId: {comp.CompanyId}, Name: {comp.Name}");
+                                }
+                                Console.WriteLine($"CompanyId: {cpvm.CompanyId}");
+
+                                var foundCompany = Model.Companies.FirstOrDefault(c => c.CompanyId == cpvm.CompanyId);
+                                if (foundCompany != null)
+                                {
+                                    <div>@foundCompany.Name</div>
+                                }
+                                else
+                                {
+                                    <div>-</div> 
+                                }
+                            }
+                        </div>
+
+
                     </div>
                 </div>
             }

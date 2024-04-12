@@ -59,6 +59,21 @@
             <div class="row">
                 <div class="col-sm-2 align-self-center">
                     <div class="form-group">
+                        <label class="inline-label" for="Email">@Localizer["Email"]</label>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <input class="form-control" data-val="true" data-val-length="@string.Format(Localizer["FieldMaxLength"].Value, 200)" data-val-length-max="200" data-val-required="@Localizer["RequiredField"]" id="Email" maxlength="200" name="Email" placeholder="@Localizer["Email"]" type="text" value="@Model.Email" />
+                    </div>
+                </div>
+                <div class="col-sm-2">
+                    <span class="field-validation-valid text-danger" data-valmsg-for="Email" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-2 align-self-center">
+                    <div class="form-group">
                         <label class="inline-label" for="TagName">@Localizer["GroupNameLabel"]</label>
                     </div>
                 </div>
@@ -88,18 +103,6 @@
             </div>
             <div class="row">
                 <div class="col-sm-2 align-self-center">
-                    <div class="form-group">
-                        <label class="inline-label" for="ChargingTime">@Localizer["ChargingTimeLabel"]</label>
-                    </div>
-                </div>
-                <div class="col-sm-6">
-                    <div class="form-group">
-                        <input type="number" class="form-control" id="ChargingTime" name="ChargingTime" placeholder="@Localizer["ChargingTimePlaceholderMinutes"]" value="@Model.ChargingTime" min="0" step="1" />
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-sm-2 align-self-center">
                     <label class="form-check-label inline-label" for="Blocked">@Localizer["ChargeTagBlockedLabel"]</label>
                 </div>
                 <div class="col-sm-6">
@@ -108,6 +111,36 @@
                     </div>
                 </div>
             </div>
+
+            @if (User.IsInRole(Constants.SuperAdminRoleName))
+            {
+                <div class="row">
+                    <div class="col-sm-2 align-self-center">
+                        <div class="form-group">
+                            <label class="inline-label" for="CompanyId">@Localizer["Company"]</label>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <select class="form-control" data-val="true" data-val-required="@Localizer["RequiredField"]" id="CompanyId" name="CompanyId">
+                                <option value="">@Localizer["SelectCompany"]</option>
+                                @foreach (var company in Model.Companies)
+                                {
+                                    <text>
+                                        <option value="@company.CompanyId">
+                                            @company.Name
+                                        </option>
+                                    </text>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-sm-2">
+                        <span class="field-validation-valid text-danger" data-valmsg-for="CompanyId" data-valmsg-replace="true"></span>
+                    </div>
+                </div>
+            }
+
             <div class="row">
                 <div class="col-sm-12 text-danger">
                     @ViewBag.ErrorMsg

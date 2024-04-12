@@ -25,36 +25,67 @@ namespace OCPP.Core.Database
         public virtual DbSet<ConnectorStatusView> ConnectorStatusViews { get; set; }
         public virtual DbSet<MessageLog> MessageLogs { get; set; }
         public virtual DbSet<Transaction> Transactions { get; set; }
-        public virtual DbSet<Usuario> Usuarios { get; set; }
+        public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<Company> Companies { get; set; }
 
         
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Usuario>(entity =>
+            modelBuilder.Entity<Company>(entity =>
             {
-                entity.ToTable("Usuarios");
+                entity.ToTable("Companies");
+
+                entity.Property(e => e.CompanyId)
+                    .HasColumnName("CompanyId")
+                    .IsRequired();
+
+                entity.Property(e => e.Name)
+                    .HasColumnName("Name")
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Address)
+                    .HasColumnName("Address")
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Phone)
+                    .HasColumnName("Phone")
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.AdministratorId)
+                    .HasColumnName("AdministratorId")
+                    .IsRequired();
+
+                entity.HasKey(e => e.CompanyId);
+            });
+
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.ToTable("Users");
 
                 entity.Property(e => e.UserId)
-                    .HasColumnName("UserId") // Nombre del campo en la base de datos
+                    .HasColumnName("UserId") 
                     .IsRequired(); 
 
                 entity.Property(e => e.Username)
-                    .HasColumnName("Username") // Nombre del campo en la base de datos
+                    .HasColumnName("Username") 
                     .IsRequired()
                     .HasMaxLength(50);
 
                 entity.Property(e => e.Password)
-                    .HasColumnName("Password") // Nombre del campo en la base de datos
+                    .HasColumnName("Password") 
                     .IsRequired()
                     .HasMaxLength(50);
 
                 entity.Property(e => e.Role)
-                    .HasColumnName("Role") // Nombre del campo en la base de datos
+                    .HasColumnName("Role") 
                     .IsRequired()
                     .HasMaxLength(50);
 
-                entity.HasKey(e => e.UserId); // Especifica la clave primaria
+                entity.HasKey(e => e.UserId); 
             });
         
 
@@ -76,6 +107,16 @@ namespace OCPP.Core.Database
                 entity.Property(e => e.Password).HasMaxLength(50);
 
                 entity.Property(e => e.ClientCertThumb).HasMaxLength(100);
+
+                entity.Property(e => e.CompanyId)
+                    .HasColumnName("CompanyId")
+                    .IsRequired();
+
+                entity.HasOne(d => d.Company)
+                    .WithMany(p => p.ChargePoints)
+                    .HasForeignKey(d => d.CompanyId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_ChargePoint_Companies");
             });
 
             modelBuilder.Entity<ChargeTag>(entity =>
@@ -88,6 +129,16 @@ namespace OCPP.Core.Database
                 entity.Property(e => e.ParentTagId).HasMaxLength(50);
 
                 entity.Property(e => e.TagName).HasMaxLength(200);
+
+                entity.Property(e => e.CompanyId)
+                    .HasColumnName("CompanyId")
+                    .IsRequired();
+
+                entity.HasOne(d => d.Company)
+                    .WithMany(p => p.ChargeTags)
+                    .HasForeignKey(d => d.CompanyId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_ChargeTag_Companies");
             });
 
             modelBuilder.Entity<ConnectorStatus>(entity =>
@@ -101,6 +152,16 @@ namespace OCPP.Core.Database
                 entity.Property(e => e.ConnectorName).HasMaxLength(100);
 
                 entity.Property(e => e.LastStatus).HasMaxLength(100);
+
+                entity.Property(e => e.CompanyId)
+                    .HasColumnName("CompanyId")
+                    .IsRequired();
+
+                entity.HasOne(d => d.Company)
+                    .WithMany(p => p.ConnectorStatus)
+                    .HasForeignKey(d => d.CompanyId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_ConnectorStatus_Companies");
             });
 
             modelBuilder.Entity<ConnectorStatusView>(entity =>

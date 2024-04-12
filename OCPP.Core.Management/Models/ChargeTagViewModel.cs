@@ -11,6 +11,8 @@ namespace OCPP.Core.Management.Models
     {
         public List<ChargeTag> ChargeTags { get; set; }
 
+        public List<Company> Companies { get; set; }
+
         public string CurrentTagId { get; set; }
 
         [Required, StringLength(50)]
@@ -18,6 +20,9 @@ namespace OCPP.Core.Management.Models
 
         [Required, StringLength(200)]
         public string TagName { get; set; }
+
+        [StringLength(50)]
+        public string Email { get; set; }
 
         [StringLength(50)]
         public string ParentTagId { get; set; }
@@ -28,6 +33,9 @@ namespace OCPP.Core.Management.Models
         public bool Blocked { get; set; }
 
         public int? ChargingTime { get; set; }
+
+        public int CompanyId { get; set; }
+        public Company Company { get; set; }
 
     }
 }

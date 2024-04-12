@@ -5,6 +5,24 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+-- Crear la tabla con la nueva definición
+CREATE TABLE [dbo].[Users] (
+    Userid INT IDENTITY(1,1) PRIMARY KEY, -- Campo de identificación autoincremental
+    Username NVARCHAR(50),
+	Email NVARCHAR(255),
+    Password NVARCHAR(50),
+    Role NVARCHAR(50)
+);
+GO
+
+CREATE TABLE [dbo].[Companies](
+    [CompanyId] [int] IDENTITY(1,1) PRIMARY KEY,,
+    [Name] NVARCHAR(50),
+    [Address] NVARCHAR(50),
+    [Phone] NVARCHAR(50),
+    [AdministratorId] [int] NOT NULL
+);
+
 CREATE TABLE [dbo].[ChargePoint](
 	[ChargePointId] [nvarchar](100) NOT NULL,
 	[Name] [nvarchar](100) NULL,
@@ -12,6 +30,7 @@ CREATE TABLE [dbo].[ChargePoint](
 	[Username] [nvarchar](50) NULL,
 	[Password] [nvarchar](50) NULL,
 	[ClientCertThumb] [nvarchar](100) NULL,
+	[CompanyId] [int] NULL,
  CONSTRAINT [PK_ChargePoint_1] PRIMARY KEY CLUSTERED 
 (
 	[ChargePointId] ASC
@@ -26,10 +45,12 @@ GO
 CREATE TABLE [dbo].[ChargeTags](
 	[TagId] [nvarchar](50) NOT NULL,
 	[TagName] [nvarchar](200) NULL,
+	[Email] [nvarchar](200) NULL,
 	[ParentTagId] [nvarchar](50) NULL,
 	[ExpiryDate] [datetime2](7) NULL,
 	[Blocked] [bit] NULL,
 	[ChargingTime] [int] NULL,
+	[CompanyId] [int] NULL,
  CONSTRAINT [PK_ChargeKeys] PRIMARY KEY CLUSTERED 
 (
 	[TagId] ASC
@@ -73,7 +94,7 @@ CREATE TABLE [dbo].[Transactions](
 	[StopTime] [datetime2](7) NULL,
 	[MeterStop] [float] NULL,
 	[StopReason] [nvarchar](100) NULL,
-	[TimeConnect] [int] NOT NULL,
+	[TimeConnect] [int] NULL,
  CONSTRAINT [PK_Transactions] PRIMARY KEY CLUSTERED 
 (
 	[TransactionId] ASC
@@ -93,6 +114,7 @@ CREATE TABLE [dbo].[ConnectorStatus](
 	[LastStatusTime] [datetime2](7) NULL,
 	[LastMeter] [float] NULL,
 	[LastMeterTime] [datetime2](7) NULL,
+	[CompanyId] [int] NULL,
  CONSTRAINT [PK_ConnectorStatus] PRIMARY KEY CLUSTERED 
 (
 	[ChargePointId] ASC,
@@ -149,30 +171,3 @@ GO
 ALTER DATABASE [OCPP.Core] SET  READ_WRITE 
 GO
 
--- Agregar columna para el tiempo de carga
-ALTER TABLE [dbo].[ChargeTags]
-ADD [ChargingTime] [int] NULL;
-GO
-
-ALTER TABLE [dbo].[Transactions] DROP CONSTRAINT [FK_Transactions_ChargePoint];
-GO
-
-ALTER TABLE [dbo].[Transactions]  WITH CHECK ADD CONSTRAINT [FK_Transactions_ChargePoint] FOREIGN KEY([ChargePointId])
-REFERENCES [dbo].[ChargePoint] ([ChargePointId])
-ON DELETE CASCADE;
-GO
-
--- Crear la tabla con la nueva definición
-CREATE TABLE dbo.Usuarios (
-    id INT IDENTITY(1,1) PRIMARY KEY, -- Campo de identificación autoincremental
-    Username NVARCHAR(50),
-    Password NVARCHAR(50),
-    Role NVARCHAR(50)
-);
-GO
--- Insertar datos en la nueva tabla
-INSERT INTO dbo.Usuarios (Username, Password, Role)
-VALUES ('superadmin', '1234', 'SuperAdmin'),
-       ('admin', '1234', 'Administrator'),
-       ('user', '1234', 'User');
-GO

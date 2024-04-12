@@ -10,7 +10,6 @@
 
     List<ConnectorStatusViewModel> connectorStatusViewModels = new List<ConnectorStatusViewModel>();
 
-    // Copy CP-Names in dictionary for name resolution and
     Dictionary<string, string> chargePointNames = new Dictionary<string, string>();
     if (Model.ChargePoints != null)
     {
@@ -21,19 +20,16 @@
     }
 
 
-    // Count connectors for every charge point (=> naming scheme)
     Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
     string currentConnectorName = string.Empty;
     foreach (ConnectorStatus cs in Model.ConnectorStatuses)
     {
         if (dictConnectorCount.ContainsKey(cs.ChargePointId))
         {
-            // > 1 connector
             dictConnectorCount[cs.ChargePointId] = dictConnectorCount[cs.ChargePointId] + 1;
         }
         else
         {
-            // first connector
             dictConnectorCount.Add(cs.ChargePointId, 1);
         }
 
@@ -44,11 +40,9 @@
         string connectorName = cs.ConnectorName;
         if (string.IsNullOrEmpty(connectorName))
         {
-            // Default: use charge point name
             chargePointNames.TryGetValue(cs.ChargePointId, out connectorName);
             if (string.IsNullOrEmpty(connectorName))
             {
-                // Fallback: use charge point ID
                 connectorName = cs.ChargePointId;
             }
             connectorName = $"{connectorName}:{cs.ConnectorId}";

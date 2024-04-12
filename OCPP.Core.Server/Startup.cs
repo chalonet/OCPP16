@@ -1,5 +1,4 @@
 
-
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -23,7 +22,6 @@ namespace OCPP.Core.Server
 {
     public class Startup
     {
-
         /// <summary>
         /// ILogger object
         /// </summary>

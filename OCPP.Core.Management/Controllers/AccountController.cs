@@ -44,7 +44,7 @@ namespace OCPP.Core.Management.Controllers
             ViewData["ReturnUrl"] = returnUrl;
             if (ModelState.IsValid)
             {
-                var user = await _dbContext.Usuarios
+                var user = await _dbContext.Users
                     .Where(u => u.Username == uvm.Username)
                     .FirstOrDefaultAsync();
 
@@ -53,10 +53,8 @@ namespace OCPP.Core.Management.Controllers
                     await UserManager.SignIn(HttpContext, uvm, false);
                     Logger.LogInformation("User '{0}' logged in", uvm.Username);
                     
-                    // Limpiar los datos del modelo de usuario (opcional)
                     uvm = new UserViewModel();
 
-                    // Redirigir al usuario a la página deseada después del inicio de sesión exitoso
                     return RedirectToLocal(returnUrl);
                 }
                 else
@@ -66,7 +64,6 @@ namespace OCPP.Core.Management.Controllers
                 }
             }
 
-            // Si llegamos aquí, algo falló o la autenticación no fue exitosa, redirigir al usuario a la página de inicio de sesión
             return View(uvm);
         }
 
