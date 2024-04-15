@@ -5,21 +5,20 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
--- Crear la tabla con la nueva definición
 CREATE TABLE [dbo].[Users] (
-    Userid INT IDENTITY(1,1) PRIMARY KEY, -- Campo de identificación autoincremental
-    Username NVARCHAR(50),
-	Email NVARCHAR(255),
-    Password NVARCHAR(50),
-    Role NVARCHAR(50)
+    [Userid] [int] IDENTITY(1,1) PRIMARY KEY, 
+	[Username] [nvarchar](50),
+	[Email] [nvarchar](255),
+    [Password] [nvarchar](50),
+    [Role] [nvarchar](50)
 );
 GO
 
 CREATE TABLE [dbo].[Companies](
-    [CompanyId] [int] IDENTITY(1,1) PRIMARY KEY,,
-    [Name] NVARCHAR(50),
-    [Address] NVARCHAR(50),
-    [Phone] NVARCHAR(50),
+    [CompanyId] [int] IDENTITY(1,1) PRIMARY KEY,
+    [Name] [nvarchar](50),
+    [Address] [nvarchar](50),
+    [Phone] [nvarchar](50),
     [AdministratorId] [int] NOT NULL
 );
 
@@ -170,4 +169,15 @@ USE [master]
 GO
 ALTER DATABASE [OCPP.Core] SET  READ_WRITE 
 GO
+ALTER TABLE [dbo].[ChargeTags] ADD CONSTRAINT [FK_ChargeTags_Companies] FOREIGN KEY([CompanyId])
+REFERENCES [dbo].[Companies] ([CompanyId]) ON DELETE CASCADE
+GO
+
+ALTER TABLE [dbo].[Transactions] DROP CONSTRAINT [FK_Transactions_ChargePoint]
+GO
+
+ALTER TABLE [dbo].[Transactions] ADD CONSTRAINT [FK_Transactions_ChargePoint] FOREIGN KEY([ChargePointId])
+REFERENCES [dbo].[ChargePoint] ([ChargePointId]) ON DELETE CASCADE
+GO
+
 
